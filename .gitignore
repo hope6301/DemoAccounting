@@ -1,3 +1,11 @@
 #gitignore 
 
 SqlString.cs
+*.suo
+*.user
+_ReSharper.*
+bin
+obj
+packages
+/DemoMoney/obj
+*obj
