@@ -12,7 +12,7 @@ namespace DemoMoney.Models.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class DemoMoneyTable
+    public class DemoMoneyTable
     {
         public int ID { get; set; }
         public System.DateTime date { get; set; }
@@ -20,5 +20,11 @@ namespace DemoMoney.Models.Models
         public int money { get; set; }
         public string remark { get; set; }
         public string InAndOut { get; set; }
+        public string DeleteOrNot { get; set; }
+    }
+
+    public class LietDemoMoneyTable : DemoMoneyTable
+    {
+        public List<DemoMoneyTable> listdemoMoneyTables { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<DemoMoney.Models.Models.DemoMoneyTable>
+﻿@model  DemoMoney.Models.Models.LietDemoMoneyTable
 
 @{
     ViewBag.Title = "Index";
@@ -33,7 +33,7 @@
             <th></th>
         </tr>
 
-        @foreach (var item in Model)
+        @foreach (var item in Model.listdemoMoneyTables)
         {
             <tr>
                 <td>

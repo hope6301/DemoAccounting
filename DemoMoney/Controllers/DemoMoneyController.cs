@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using DemoMoney.DAOs;
 using DemoMoney.Models;
 using DemoMoney.Models.Models;
 using DemoMoney.Services;
@@ -13,11 +14,17 @@ namespace DemoMoney.Controllers
     {
         // GET: DemoMoney
         public ActionResult Index()
+        
         {
             DemoMoneyEntities content = new DemoMoneyEntities();
             var result = content.DemoMoneyTable;
 
-            return View(result);
+            SqlDAOs sqlDAOs = new SqlDAOs();
+
+            LietDemoMoneyTable demoMoneyTables = sqlDAOs.SelectAll();
+           
+
+            return View(demoMoneyTables);
         }
 
         [HttpPost]

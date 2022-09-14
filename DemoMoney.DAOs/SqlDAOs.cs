@@ -1,6 +1,8 @@
 ﻿using DemoMoney.Models.Models;
+using NPOI.SS.Formula.PTG;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -36,6 +38,62 @@ namespace DemoMoney.DAOs
             conn.Dispose();
 
             return (int)result;
+        }
+
+        public LietDemoMoneyTable SelectAll()
+        {
+            SqlConnection conn = new SqlConnection(sqlstring);
+            conn.Open();
+
+            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable]");
+
+            SqlCommand cmd = new SqlCommand(sql, conn);
+
+            //取得SQL資料
+            //SqlDataReader dr = cmd.ExecuteReader();
+            var reader = cmd.ExecuteReader();
+            DataTable schemaTable = reader.GetSchemaTable();
+
+            LietDemoMoneyTable aaa = new LietDemoMoneyTable();
+            List<DemoMoneyTable> gg = new List<DemoMoneyTable>();
+            int ww = 0;
+
+            
+
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                   int rr = (int)reader[0];
+                   string tt = reader[2].ToString();
+                    ww = ww + 1;
+                    gg.Add(new DemoMoneyTable() { ID = Convert.ToInt32(reader["ID"]), money = Convert.ToInt32(reader["money"]) });
+                    //aaa.listdemoMoneyTables = new List<DemoMoneyTable>()
+                    //{
+                        //new DemoMoneyTable(){ID=Convert.ToInt32(reader["ID"]),money=Convert.ToInt32(reader["money"])}
+                    //};
+                }
+            }
+
+            int aa = ww;
+
+            var model1 = new LietDemoMoneyTable();
+            model1.listdemoMoneyTables = gg;
+            //foreach (DataRow row in schemaTable.Rows)
+            {
+                
+                //foreach (DataColumn column in schemaTable.Columns)
+                {
+                    //Console.WriteLine(column);
+                }
+            }
+
+
+            cmd.Cancel();
+            conn.Close();
+            conn.Dispose();
+
+            return model1;
         }
 
         public int SelectAllLength()
@@ -131,13 +189,14 @@ namespace DemoMoney.DAOs
             int money = demomoneytable.money;
             string remark = demomoneytable.remark;
             string InAndOut = demomoneytable.InAndOut;
+            string DeleteOrNot = "N";
 
             SqlConnection conn = new SqlConnection(sqlstring);
             conn.Open();
 
             string sql = string.Format(@"INSERT INTO [dbo].[DemoMoneyTable]
-                                            ([ID],[date],[category],[money],[remark],[InAndOut])
-                                            VALUES({0},'{1}','{2}',{3},'{4}','{5}')", ID, date.ToString("yyyy/MM/dd"), category, money, remark, InAndOut);
+                                            ([ID],[date],[category],[money],[remark],[InAndOut],[DeleteOrNot])
+                                            VALUES({0},'{1}','{2}',{3},'{4}','{5}','{6}')", ID, date.ToString("yyyy/MM/dd"), category, money, remark, InAndOut, DeleteOrNot);
 
             SqlCommand cmd = new SqlCommand(sql, conn);
 
