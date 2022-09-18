@@ -12,7 +12,7 @@ namespace DemoMoney.Services
     {
         ServiceResult<bool> Create(DemoMoneyTable demomoneytable);
         ServiceResult<bool> Edit(DemoMoneyTable demomoneytable);
-        DemoMoneyTable Select(int id);
+        DemoMoneyTable SelectID(int id);
         ServiceResult<bool> Delete(int id);
         ServiceResult<bool> UpFile(HttpPostedFileBase demomoneytable);
     }

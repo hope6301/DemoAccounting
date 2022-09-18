@@ -14,15 +14,14 @@ namespace DemoMoney.Controllers
     {
         // GET: DemoMoney
         public ActionResult Index()
-        
         {
-            DemoMoneyEntities content = new DemoMoneyEntities();
-            var result = content.DemoMoneyTable;
+            //DemoMoneyEntities content = new DemoMoneyEntities();
+            //var result = content.DemoMoneyTable;
 
-            SqlDAOs sqlDAOs = new SqlDAOs();
+            AccountingServices services = new AccountingServices();
+            LietDemoMoneyTable demoMoneyTables = services.SelectAll();
+            ViewBag.Message = TempData["Message"] as string;
 
-            LietDemoMoneyTable demoMoneyTables = sqlDAOs.SelectAll();
-           
 
             return View(demoMoneyTables);
         }
@@ -30,11 +29,8 @@ namespace DemoMoney.Controllers
         [HttpPost]
         public ActionResult Index(int id)
         {
-            int aaa = id;
             return View();
         }
-
-
 
         // GET: DemoMoney/Details/5
         // GET: Demo/Details/5
@@ -47,6 +43,7 @@ namespace DemoMoney.Controllers
         public ActionResult Create()
         {
             var model = new DemoMoneyTable();
+            
 
             return View(model);
         }
@@ -61,17 +58,19 @@ namespace DemoMoney.Controllers
                 // TODO: Add insert logic here
                 if (ModelState.IsValid)
                 {
-                    AccountingServices createServices = new AccountingServices();
-                    result = createServices.Create(demomoneytable);
+                    AccountingServices services = new AccountingServices();
+                    result = services.Create(demomoneytable);
                 }
                 else
                 {
                     return View(demomoneytable);
                 }
+                TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
             }
             catch
             {
+                ViewBag.Message = result.Message;
                 return View();
             }
         }
@@ -79,10 +78,14 @@ namespace DemoMoney.Controllers
         // GET: Demo/Edit/5
         public ActionResult Edit(int id)
         {
-            int bbb = id;
-            DemoMoneyEntities content = new DemoMoneyEntities();
-            var result = content.DemoMoneyTable.FirstOrDefault(model => model.ID == id);
-            return View(result);
+            //DemoMoneyEntities content = new DemoMoneyEntities();
+            //var result = content.DemoMoneyTable.FirstOrDefault(model => model.ID == id);
+
+            AccountingServices services = new AccountingServices();
+            DemoMoneyTable moneyTable = new DemoMoneyTable();
+            moneyTable = services.SelectID(id);
+
+            return View(moneyTable);
         }
 
         // POST: Demo/Edit/5
@@ -94,7 +97,6 @@ namespace DemoMoney.Controllers
             {
                 if (ModelState.IsValid)
                 {
-
                     DemoMoneyTable value = new DemoMoneyTable()
                     {
                         ID = id,
@@ -102,25 +104,28 @@ namespace DemoMoney.Controllers
                         category = category,
                         money = money,
                         remark = remark,
-                        InAndOut = InAndOut
+                        InAndOut = InAndOut,
+                        DeleteOrNot = "N"
                     };
                     // TODO: Add update logic here
-                    AccountingServices createServices = new AccountingServices();
-                    result = createServices.Edit(value);
+                    AccountingServices services = new AccountingServices();
+                    result = services.Edit(value);
                     if (result.Result == true)
                     {
+                        TempData["Message"] = result.Message;
                         return RedirectToAction("Index");
                     }
                     else
                     {
+                        TempData["Message"] = result.Message;
                         return View("Create", demomoneytable);
                     }
                 }
                 else
                 {
+                    TempData["Message"] = result.Message;
                     return View("Create", demomoneytable);
                 }
-
             }
             catch
             {
@@ -133,7 +138,7 @@ namespace DemoMoney.Controllers
         {
             AccountingServices services = new AccountingServices();
             DemoMoneyTable demomoneytable = new DemoMoneyTable();
-            demomoneytable = services.Select(id);
+            demomoneytable = services.SelectID(id);
 
             return View(demomoneytable);
         }
@@ -162,14 +167,13 @@ namespace DemoMoney.Controllers
             return View();
         }
 
-
         [HttpPost]
         public ActionResult Import(HttpPostedFileBase file)
         {
             ViewBag.Message = "匯入成功";
             try
             {
-                ServiceResult<bool> result = new ServiceResult<bool>() { Status = ServiceStatus.Success, Result = true };
+                ServiceResult<bool> result = new ServiceResult<bool>();
                 if (file != null)
                 {
                     AccountingServices services = new AccountingServices();
@@ -186,6 +190,7 @@ namespace DemoMoney.Controllers
                     ViewBag.Message = "沒有上傳檔案";
                     return View();
                 }
+                TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
             }
             catch (Exception ex)

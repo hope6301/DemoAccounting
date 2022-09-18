@@ -5,6 +5,10 @@
 }
 
 <h2>Index</h2>
+@if (ViewBag.Message != null)
+{
+    <h3>@ViewBag.Message</h3>
+}
 
 <p>
 
@@ -30,6 +34,9 @@
             <th>
                 @Html.DisplayNameFor(model => model.InAndOut)
             </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeleteOrNot)
+            </th>
             <th></th>
         </tr>
 
@@ -53,6 +60,9 @@
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.InAndOut)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.DeleteOrNot)
                 </td>
                 <td>
                     @Html.ActionLink("Edit", "Edit", new { id = item.ID }) |

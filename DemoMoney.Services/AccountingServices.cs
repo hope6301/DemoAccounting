@@ -6,6 +6,7 @@ using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,15 +18,28 @@ namespace DemoMoney.Services
     public class AccountingServices : IAccountingServices
     {
         /// <summary>
+        /// 查詢全部未刪除資料
+        /// </summary>
+        /// <returns></returns>
+        public LietDemoMoneyTable SelectAll()
+        {
+            SqlDAOs dao = new SqlDAOs();
+            LietDemoMoneyTable reader = dao.SelectAll();
+
+            return reader;
+        }
+
+
+        /// <summary>
         /// 查詢指定ID資料
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public DemoMoneyTable Select(int id)
+        public DemoMoneyTable SelectID(int id)
         {
             DemoMoneyTable demomoneytable = new DemoMoneyTable();
             SqlDAOs dao = new SqlDAOs();
-            demomoneytable = dao.Select(id);
+            demomoneytable = dao.SelectID(id);
             return demomoneytable;
         }
 
@@ -36,25 +50,40 @@ namespace DemoMoney.Services
         /// <returns></returns>
         public ServiceResult<bool> Create(DemoMoneyTable demomoneytable)
         {
-
-            ServiceResult<bool> batchResult = new ServiceResult<bool> { Status = ServiceStatus.Success, Result = true };
-
+            //新增資料的另一種寫法
             //DemoEntities2 content = new DemoEntities2();
             //System.Data.Entity.DbSet<accounting1> result1 = content.accounting1;
             //result1.Add(demomoneytable);
             //content.SaveChanges();
 
+            ServiceResult<bool> batchResult = new ServiceResult<bool> { Status = ServiceStatus.Success, Result = true };
             SqlDAOs dao = new SqlDAOs();
+
             int SqlLength = dao.SelectAllLength();
+
             if (SqlLength<1)
             {
                 SqlLength = 1;
             }
+
             int EndIdValue = dao.SelectEndId(SqlLength);
 
             demomoneytable.ID = EndIdValue + 1;
-            dao.Create(demomoneytable);
 
+            int result= dao.Create(demomoneytable);
+
+            if(result > 0)
+            {
+                batchResult.Status = ServiceStatus.Success;
+                batchResult.Result = true;
+                batchResult.Message = "資料新增成功";
+            }
+            else
+            {
+                batchResult.Status = ServiceStatus.NotFound;
+                batchResult.Result = false;
+                batchResult.Message = "新增資料失敗";
+            }
             return batchResult;
         }
 
@@ -65,13 +94,28 @@ namespace DemoMoney.Services
         /// <returns></returns>
         public ServiceResult<bool> Edit(DemoMoneyTable demomoneytable)
         {
-            ServiceResult<bool> batchResult = new ServiceResult<bool> { Status = ServiceStatus.Success, Result = true };
+            //修改資料的另一種寫法
+            //DemoMoneyEntities content = new DemoMoneyEntities();
+            //content.DemoMoneyTable.Attach(demomoneytable);
+            //content.Entry(demomoneytable).State = System.Data.Entity.EntityState.Modified;
+            //content.SaveChanges();
 
-            DemoMoneyEntities content = new DemoMoneyEntities();
-            content.DemoMoneyTable.Attach(demomoneytable);
-            content.Entry(demomoneytable).State = System.Data.Entity.EntityState.Modified;
-            content.SaveChanges();
+            ServiceResult<bool> batchResult = new ServiceResult<bool>();
 
+            SqlDAOs dao = new SqlDAOs();
+            int result =  dao.Edit(demomoneytable);
+            if (result > 0)
+            {
+                batchResult.Status = ServiceStatus.Success;
+                batchResult.Result = true;
+                batchResult.Message = "資料修改成功";
+            }
+            else
+            {
+                batchResult.Status = ServiceStatus.Success;
+                batchResult.Result = true;
+                batchResult.Message = "修改失敗";
+            }
             return batchResult;
         }
 
@@ -285,6 +329,7 @@ namespace DemoMoney.Services
             }
             batchResult.Status = ServiceStatus.Success;
             batchResult.Result = true;
+            batchResult.Message = "上傳成功";
             return batchResult;
         }
     }

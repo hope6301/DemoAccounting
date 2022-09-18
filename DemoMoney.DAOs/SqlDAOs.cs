@@ -27,6 +27,11 @@ namespace DemoMoney.DAOs
 
         string sqlstring = "Data Source=DESKTOP-FE43T7V;Initial Catalog=DemoMoney;Integrated Security=True";
 
+        /// <summary>
+        /// 執行新增修改刪除 方法
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <returns></returns>
         public int NonQuery(string sql)
         {
             SqlConnection conn = new SqlConnection(sqlstring);
@@ -40,62 +45,53 @@ namespace DemoMoney.DAOs
             return (int)result;
         }
 
+        /// <summary>
+        /// 查詢全部未刪除資料
+        /// </summary>
+        /// <returns></returns>
         public LietDemoMoneyTable SelectAll()
         {
             SqlConnection conn = new SqlConnection(sqlstring);
             conn.Open();
 
-            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable]");
+            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE DeleteOrNot = 'N'");
 
             SqlCommand cmd = new SqlCommand(sql, conn);
 
             //取得SQL資料
             //SqlDataReader dr = cmd.ExecuteReader();
             var reader = cmd.ExecuteReader();
-            DataTable schemaTable = reader.GetSchemaTable();
 
-            LietDemoMoneyTable aaa = new LietDemoMoneyTable();
-            List<DemoMoneyTable> gg = new List<DemoMoneyTable>();
-            int ww = 0;
-
-            
+            List<DemoMoneyTable> listdemomodel = new List<DemoMoneyTable>();
 
             if (reader.HasRows)
             {
                 while (reader.Read())
                 {
-                   int rr = (int)reader[0];
-                   string tt = reader[2].ToString();
-                    ww = ww + 1;
-                    gg.Add(new DemoMoneyTable() { ID = Convert.ToInt32(reader["ID"]), money = Convert.ToInt32(reader["money"]) });
-                    //aaa.listdemoMoneyTables = new List<DemoMoneyTable>()
-                    //{
-                        //new DemoMoneyTable(){ID=Convert.ToInt32(reader["ID"]),money=Convert.ToInt32(reader["money"])}
-                    //};
+                    listdemomodel.Add(new DemoMoneyTable() { ID = Convert.ToInt32(reader["ID"]), 
+                                                             date = Convert.ToDateTime(reader["date"]),
+                                                             money = Convert.ToInt32(reader["money"]),
+                                                             category = reader["category"].ToString(),
+                                                             remark = reader["remark"].ToString(),
+                                                             InAndOut = reader["InAndOut"].ToString(),
+                                                             DeleteOrNot = reader["DeleteOrNot"].ToString()
+                    });
                 }
             }
+            var lietDemoMoneyTable = new LietDemoMoneyTable();
+            lietDemoMoneyTable.listdemoMoneyTables = listdemomodel;
 
-            int aa = ww;
+            //cmd.Cancel();
+            //conn.Close();
+            //conn.Dispose();
 
-            var model1 = new LietDemoMoneyTable();
-            model1.listdemoMoneyTables = gg;
-            //foreach (DataRow row in schemaTable.Rows)
-            {
-                
-                //foreach (DataColumn column in schemaTable.Columns)
-                {
-                    //Console.WriteLine(column);
-                }
-            }
-
-
-            cmd.Cancel();
-            conn.Close();
-            conn.Dispose();
-
-            return model1;
+            return lietDemoMoneyTable;
         }
 
+        /// <summary>
+        /// 查詢目前全部資料有多少筆
+        /// </summary>
+        /// <returns></returns>
         public int SelectAllLength()
         {
             SqlConnection conn = new SqlConnection(sqlstring);
@@ -109,7 +105,6 @@ namespace DemoMoney.DAOs
             //SqlDataReader dr = cmd.ExecuteReader();
             var SqlAllLength = cmd.ExecuteScalar();
             
-
             cmd.Cancel();
             conn.Close();
             conn.Dispose();
@@ -117,6 +112,11 @@ namespace DemoMoney.DAOs
             return (int)SqlAllLength;
         }
 
+        /// <summary>
+        /// 查詢最後一筆ID為多少
+        /// </summary>
+        /// <param name="idalllength"></param>
+        /// <returns></returns>
         public int SelectEndId(int idalllength)
         {
             SqlConnection conn = new SqlConnection(sqlstring);
@@ -150,12 +150,12 @@ namespace DemoMoney.DAOs
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public DemoMoneyTable Select(int id)
+        public DemoMoneyTable SelectID(int id)
         {
             SqlConnection conn = new SqlConnection(sqlstring);
             conn.Open();
 
-            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE ID={0}", id);
+            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE (ID={0} and DeleteOrNot = 'N')", id);
 
             SqlCommand cmd = new SqlCommand(sql, conn);
 
@@ -168,10 +168,11 @@ namespace DemoMoney.DAOs
             {
                 demomoneytable.ID = Convert.ToInt32(dr["ID"]);
                 demomoneytable.date = Convert.ToDateTime(dr["date"]);
-                demomoneytable.money = Convert.ToInt32(dr["ID"]);
+                demomoneytable.money = Convert.ToInt32(dr["money"]);
                 demomoneytable.category = dr["category"].ToString();
                 demomoneytable.remark = dr["remark"].ToString();
                 demomoneytable.InAndOut = dr["InAndOut"].ToString();
+                demomoneytable.DeleteOrNot = dr["DeleteOrNot"].ToString();
             }
 
             cmd.Cancel();
@@ -181,7 +182,11 @@ namespace DemoMoney.DAOs
             return demomoneytable;
         }
 
-        public void Create(DemoMoneyTable demomoneytable)
+        /// <summary>
+        /// 新增資料
+        /// </summary>
+        /// <param name="demomoneytable"></param>
+        public int Create(DemoMoneyTable demomoneytable)
         {
             int ID = demomoneytable.ID;
             DateTime date = demomoneytable.date;
@@ -191,47 +196,61 @@ namespace DemoMoney.DAOs
             string InAndOut = demomoneytable.InAndOut;
             string DeleteOrNot = "N";
 
-            SqlConnection conn = new SqlConnection(sqlstring);
-            conn.Open();
-
             string sql = string.Format(@"INSERT INTO [dbo].[DemoMoneyTable]
                                             ([ID],[date],[category],[money],[remark],[InAndOut],[DeleteOrNot])
-                                            VALUES({0},'{1}','{2}',{3},'{4}','{5}','{6}')", ID, date.ToString("yyyy/MM/dd"), category, money, remark, InAndOut, DeleteOrNot);
+                                            VALUES({0},'{1}','{2}',{3},'{4}','{5}','{6}')", ID, date.ToString("yyyy/MM/dd"), category, money, remark, InAndOut, DeleteOrNot
+                                            );
 
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            //取得SQL資料
-            //SqlDataReader dr = cmd.ExecuteReader();
-            var aa = cmd.ExecuteNonQuery();
-
-            ///目前沒用到
-            ///
-            //DemoMoneyTable xx = new DemoMoneyTable();
-
-            //while (dr.Read())
-            //{
-            //    xx.ID = Convert.ToInt32(dr["ID"]);
-            //    xx.date = Convert.ToDateTime(dr["date"]);
-            //    xx.money = Convert.ToInt32(dr["ID"]);
-            //    xx.category = dr["category"].ToString();
-            //    xx.remark = dr["remark"].ToString();
-            //    xx.InAndOut = dr["InAndOut"].ToString();
-            //}
-
-            cmd.Cancel();
-            conn.Close();
-            conn.Dispose();
-
+            int result = NonQuery(sql);
+            return (int)result;
         }
 
-        ///public List<DemoMoneyTable> Dbqq(int id)
-
+        /// <summary>
+        /// 刪除資料
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public int Delete(int id)
         {
-            string sql = string.Format(@"DELETE FROM [dbo].[DemoMoneyTable]
-                                         WHERE ID={0}", id);
+            //string sql = string.Format(@"DELETE FROM [dbo].[DemoMoneyTable] WHERE ID={0}", id);
+            string sql = string.Format(@"UPDATE [dbo].[DemoMoneyTable]
+                                            SET [DeleteOrNot] = 'Y'
+                                            WHERE ID = {0}", id);
+
             int result = NonQuery(sql);
             return result;
         }
+        
+        /// <summary>
+        /// 修改資料
+        /// </summary>
+        /// <param name="demomoneytable"></param>
+        /// <returns></returns>
+        public int Edit(DemoMoneyTable demomoneytable)
+        {
+            //string sql = string.Format(@"DELETE FROM [dbo].[DemoMoneyTable] WHERE ID={0}", id);
+
+            int ID = demomoneytable.ID;
+            DateTime date = demomoneytable.date;
+            string category = demomoneytable.category;
+            int money = demomoneytable.money;
+            string remark = demomoneytable.remark;
+            string InAndOut = demomoneytable.InAndOut;
+            string DeleteOrNot = demomoneytable.DeleteOrNot;
+
+            string sql = string.Format(@"UPDATE [dbo].[DemoMoneyTable]
+                                           SET [ID] = {0}
+                                              ,[date] = '{1}'
+                                              ,[category] = '{2}'
+                                              ,[money] = {3}
+                                              ,[remark] = '{4}'
+                                              ,[InAndOut] = '{5}'
+                                              ,[DeleteOrNot] = '{6}'
+                                         WHERE ID = {0}", ID, date.ToString("yyyy/MM/dd"), category,money,remark,InAndOut,DeleteOrNot);
+
+            int result = NonQuery(sql);
+            return result;
+        }
+
     }
 }
