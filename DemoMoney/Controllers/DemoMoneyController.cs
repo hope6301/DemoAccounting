@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-using DemoMoney.DAOs;
-using DemoMoney.Models;
 using DemoMoney.Models.Models;
 using DemoMoney.Services;
 
@@ -200,5 +196,36 @@ namespace DemoMoney.Controllers
             }
 
         }
+
+        [HttpPost]
+        public ActionResult Button_Click(string sender, int location, EventArgs e)
+        {
+            //傳好玩的
+            string ee = sender;
+            //傳好玩的
+            int aa = location;
+
+                AccountingServices services = new AccountingServices();
+                ServiceResult<bool> batchResult = services.DownloadAll();
+                if (batchResult.Result)
+                {
+
+                    batchResult.Status = ServiceStatus.Success;
+                    batchResult.Result = true;
+                    batchResult.Message = "下載成功";
+
+                    return Json(batchResult);
+                }
+                else
+                {
+
+                    batchResult.Status = ServiceStatus.Failure;
+                    batchResult.Result = false;
+                    batchResult.Message = "下載失敗";
+
+                    return Json(batchResult);
+                }
+        }
+
     }
 }

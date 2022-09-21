@@ -29,7 +29,6 @@ namespace DemoMoney.Services
             return reader;
         }
 
-
         /// <summary>
         /// 查詢指定ID資料
         /// </summary>
@@ -330,6 +329,61 @@ namespace DemoMoney.Services
             batchResult.Status = ServiceStatus.Success;
             batchResult.Result = true;
             batchResult.Message = "上傳成功";
+            return batchResult;
+        }
+
+        /// <summary>
+        /// 下載EXCEL全部資料
+        /// </summary>
+        /// <returns></returns>
+        public ServiceResult<bool> DownloadAll()
+        {
+            ServiceResult<bool> batchResult = new ServiceResult<bool>();
+            IWorkbook workbook = new HSSFWorkbook(); //声明工作簿对象，可以创建xls或xlsx Excel文件
+            ISheet sheet = workbook.CreateSheet("記帳資料"); //创建工作表
+
+            //sheet.CreateRow(1);
+            ////合併儲存格
+            //sheet.AddMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+            //sheet.GetRow(1).CreateCell(0).SetCellValue("我是主標題");
+
+
+            List<string> tt = new List<string>() { "日期", "類別", "金額", "備註", "收支" };
+
+            sheet.CreateRow(0);
+            for(int i = 0; i < tt.Count; i++)
+            {
+                sheet.GetRow(0).CreateCell(i).SetCellValue(tt[i]);
+            }
+
+            List<DemoMoneyTable> tables = new List<DemoMoneyTable>();
+            SqlDAOs dao = new SqlDAOs();
+            tables = dao.DownloadAll();
+
+            for(int i = 0; i < tables.Count; i++)
+            {
+                int t = i + 1;
+                sheet.CreateRow(t);
+                sheet.GetRow(t).CreateCell(0).SetCellValue(tables[i].date.ToString("yyyy/MM/dd"));
+                sheet.GetRow(t).CreateCell(1).SetCellValue(tables[i].category);
+                sheet.GetRow(t).CreateCell(2).SetCellValue(tables[i].money);
+                sheet.GetRow(t).CreateCell(3).SetCellValue(tables[i].remark);
+                sheet.GetRow(t).CreateCell(4).SetCellValue(tables[i].InAndOut);
+            }
+
+            FileStream streamWriter = new FileStream(@"D:\code\測試.xls", FileMode.Create, FileAccess.ReadWrite);
+            workbook.Write(streamWriter);
+            streamWriter.Close();
+            streamWriter.Dispose();
+
+
+            batchResult.Status = ServiceStatus.Success;
+            batchResult.Result = true;
+            batchResult.Message = "上傳成功";
+
+
+
+
             return batchResult;
         }
     }

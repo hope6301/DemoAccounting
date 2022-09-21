@@ -19,6 +19,7 @@ namespace DemoMoney.Models.Models
         public int ID { get; set; }
 
         [DisplayName("日期")]
+        [Display(Name ="日期測試")]
         [Required(ErrorMessage = "必填欄位")]
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy/MM/dd}")]
         [DataType(DataType.Date)]

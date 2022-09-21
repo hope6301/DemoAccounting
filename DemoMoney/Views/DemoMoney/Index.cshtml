@@ -11,7 +11,6 @@
 }
 
 <p>
-
     @Html.ActionLink("Create New", "Create")
     @Html.ActionLink("Import", "Import")
     <table class="table">
@@ -73,3 +72,32 @@
         }
 
     </table>
+    <div id="toolbar">
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">New User</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editUser()">Edit User</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyUser()">Remove User</a>
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>
+        @*<form id="Downloadform" method="post" action="/Demo/Button_Click">
+            <button id="Downloadbutton">下載表單</button>
+            </form>*@
+    </div>
+    <script type="text/javascript">
+        function download_excel() {
+            $.ajax({
+                url: '@Url.Action("Button_Click", "DemoMoney")',
+                type: 'post',
+                dataType: 'json',
+                data: { sender: 'John', location: 123},
+                success: function (response) {
+                    if (response.Result) {
+                        alert('Download Success!!' + response.Message);
+                    } else {
+                        alert('DownloadError!!' + response.Message);
+                    }
+                },
+                error: function (errer) {
+                    alert('DownloadError!!');
+                }
+            });
+        }
+    </script>

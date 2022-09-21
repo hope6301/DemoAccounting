@@ -81,11 +81,56 @@ namespace DemoMoney.DAOs
             var lietDemoMoneyTable = new LietDemoMoneyTable();
             lietDemoMoneyTable.listdemoMoneyTables = listdemomodel;
 
-            //cmd.Cancel();
-            //conn.Close();
-            //conn.Dispose();
+            cmd.Cancel();
+            conn.Close();
+            conn.Dispose();
 
             return lietDemoMoneyTable;
+        }
+
+        /// <summary>
+        /// 查詢需下載資料
+        /// </summary>
+        /// <returns></returns>
+        public List<DemoMoneyTable> DownloadAll()
+        {
+            SqlConnection conn = new SqlConnection(sqlstring);
+            conn.Open();
+
+            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE DeleteOrNot = 'N'");
+
+            SqlCommand cmd = new SqlCommand(sql, conn);
+
+            //取得SQL資料
+            //SqlDataReader dr = cmd.ExecuteReader();
+            var reader = cmd.ExecuteReader();
+
+            List<DemoMoneyTable> listdemomodel = new List<DemoMoneyTable>();
+
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    listdemomodel.Add(new DemoMoneyTable()
+                    {
+                        ID = Convert.ToInt32(reader["ID"]),
+                        date = Convert.ToDateTime(reader["date"]),
+                        money = Convert.ToInt32(reader["money"]),
+                        category = reader["category"].ToString(),
+                        remark = reader["remark"].ToString(),
+                        InAndOut = reader["InAndOut"].ToString(),
+                        DeleteOrNot = reader["DeleteOrNot"].ToString()
+                    });
+                }
+            }
+            var lietDemoMoneyTable = new LietDemoMoneyTable();
+            lietDemoMoneyTable.listdemoMoneyTables = listdemomodel;
+
+            cmd.Cancel();
+            conn.Close();
+            conn.Dispose();
+
+            return listdemomodel;
         }
 
         /// <summary>
