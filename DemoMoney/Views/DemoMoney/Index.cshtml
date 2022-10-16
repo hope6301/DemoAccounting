@@ -1,4 +1,4 @@
-﻿@model  DemoMoney.Models.Models.LietDemoMoneyTable
+﻿@model  IEnumerable<DemoMoney.Models.Models.DemoMoneyTable>
 
 @{
     ViewBag.Title = "Index";
@@ -39,7 +39,7 @@
             <th></th>
         </tr>
 
-        @foreach (var item in Model.listdemoMoneyTables)
+        @foreach (var item in Model)
         {
             <tr>
                 <td>
@@ -75,12 +75,17 @@
     <div id="toolbar">
         <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">New User</a>
         <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editUser()">Edit User</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyUser()">Remove User</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>
-        @*<form id="Downloadform" method="post" action="/Demo/Button_Click">
+        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyUser()">text api</a>
+        @{
+            if (Request.Cookies["UserKeepLogin"] != null)
+            {
+                <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>
+            }
+         }
+            @*<form id="Downloadform" method="post" action="/Demo/Button_Click">
             <button id="Downloadbutton">下載表單</button>
             </form>*@
-    </div>
+        </div>
     <script type="text/javascript">
         function download_excel() {
             $.ajax({
@@ -100,4 +105,26 @@
                 }
             });
         }
+        function destroyUser() {
+            $.ajax({
+                url: '@Url.Action("textapi", "DemoMoney")',
+                type: 'post',
+                dataType: 'json',
+                data: { sender: 'John', location: 123},
+                success: function (response) {
+                    if (response.Result) {
+                        alert('Download Success!!' + response.Message);
+                    } else {
+                        alert('DownloadError!!' + response.Message);
+                    }
+                },
+                error: function (errer) {
+                    alert('DownloadError!!');
+                }
+            });
+        }
+
+
+
+
     </script>

@@ -42,8 +42,10 @@ namespace DemoMoney.Models.Models
         public string InAndOut { get; set; }
 
         [DisplayName("是否刪除")]
-        [Required(ErrorMessage = "必填欄位")]
         public string DeleteOrNot { get; set; }
+
+        [DisplayName("使用者名稱")]
+        public string users { get; set; }
     }
 
     public class LietDemoMoneyTable : DemoMoneyTable

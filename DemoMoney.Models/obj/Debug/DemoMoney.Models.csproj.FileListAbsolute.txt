@@ -1,5 +1,3 @@
-D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csprojAssemblyReference.cache
-D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csproj.CoreCompileInputs.cache
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\DemoMoney.Models.dll.config
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\DemoMoney.Models.dll
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\DemoMoney.Models.pdb
@@ -8,6 +6,8 @@ D:\code\DemoMoney\DemoMoney.Models\bin\Debug\EntityFramework.SqlServer.dll
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\EntityFramework.xml
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\EntityFramework.SqlServer.xml
 D:\code\DemoMoney\DemoMoney.Models\bin\Debug\zh-Hant\EntityFramework.resources.dll
+D:\code\DemoMoney\DemoMoney.Models\bin\Debug\zh-Hant\EntityFramework.SqlServer.resources.dll
+D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csproj.CoreCompileInputs.cache
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csproj.CopyComplete
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.dll
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.pdb

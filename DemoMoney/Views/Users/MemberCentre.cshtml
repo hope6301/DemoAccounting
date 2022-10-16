@@ -1,0 +1,38 @@
+﻿@model DemoMoney.Models.Models.UsersTableModel
+@{
+    ViewBag.Title = "MemberCentre";
+}
+
+<h2>MemberCentre</h2>
+
+
+<div class="login-box">
+    <h2>會員資料</h2>
+
+    <button class="button-Edit" id="button-Edit" type="button">編輯資料</button>
+
+    <form>
+        <div class="user-box">
+            @Html.LabelFor(model => model.Account, htmlAttributes: new { @class = "user-accountlabel" })
+            @Html.EditorFor(model => model.Account, new { htmlAttributes = new { @class = "userfrom", id = "AccountID" , disabled = true} })
+            @Html.ValidationMessageFor(model => model.Account, "", new { @class = "text-accountmessage" })
+        </div>
+        <div class="user-box">
+            @Html.LabelFor(model => model.Last_name, htmlAttributes: new { @class = "user-accountlabel" })
+            @Html.EditorFor(model => model.Last_name, new { htmlAttributes = new { @class = "userfrom", id = "Last_nameID", disabled = true } })
+            @Html.ValidationMessageFor(model => model.Last_name, "", new { @class = "text-accountmessage" })
+        </div>
+        <div class="user-box">
+            @Html.LabelFor(model => model.First_name, htmlAttributes: new { @class = "user-accountlabel" })
+            @Html.EditorFor(model => model.First_name, new { htmlAttributes = new { @class = "userfrom", id = "First_nameID", disabled = true } })
+            @Html.ValidationMessageFor(model => model.First_name, "", new { @class = "text-accountmessage" })
+        </div>
+    </form>
+</div>
+
+<script src="~/Scripts/js-MemberCentre.js"></script>
+
+
+
+
+

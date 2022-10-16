@@ -29,6 +29,8 @@ namespace DemoMoney.Services
             return reader;
         }
 
+
+
         /// <summary>
         /// 查詢指定ID資料
         /// </summary>
@@ -47,7 +49,7 @@ namespace DemoMoney.Services
         /// </summary>
         /// <param name="demomoneytable"></param>
         /// <returns></returns>
-        public ServiceResult<bool> Create(DemoMoneyTable demomoneytable)
+        public ServiceResult<bool> Create(DemoMoneyTable demomoneytable , string account)
         {
             //新增資料的另一種寫法
             //DemoEntities2 content = new DemoEntities2();
@@ -65,9 +67,11 @@ namespace DemoMoney.Services
                 SqlLength = 1;
             }
 
-            int EndIdValue = dao.SelectEndId(SqlLength);
+            var EndIdValue = dao.SelectEndId(SqlLength);
 
             demomoneytable.ID = EndIdValue + 1;
+            demomoneytable.DeleteOrNot = "N";
+            demomoneytable.users = account;
 
             int result= dao.Create(demomoneytable);
 
@@ -150,7 +154,7 @@ namespace DemoMoney.Services
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        public ServiceResult<bool> UpFile(HttpPostedFileBase file)
+        public ServiceResult<bool> UpFile(HttpPostedFileBase file , string account)
         {
             ServiceResult<bool> batchResult = new ServiceResult<bool>();
             if (file != null)
@@ -314,7 +318,7 @@ namespace DemoMoney.Services
                     };
                     try
                     {
-                        this.Create(demomoneytable);
+                        this.Create(demomoneytable,account);
                     }
                     catch (Exception ex)
                     {
@@ -358,7 +362,10 @@ namespace DemoMoney.Services
 
             List<DemoMoneyTable> tables = new List<DemoMoneyTable>();
             SqlDAOs dao = new SqlDAOs();
-            tables = dao.DownloadAll();
+
+            //先寫死
+            string aa = "hope6301";
+            tables = dao.QueryAllUsersData(aa);
 
             for(int i = 0; i < tables.Count; i++)
             {
@@ -381,10 +388,15 @@ namespace DemoMoney.Services
             batchResult.Result = true;
             batchResult.Message = "上傳成功";
 
-
-
-
             return batchResult;
+        }
+
+        public List<DemoMoneyTable> listSelectAll(string users)
+        {
+            SqlDAOs dao = new SqlDAOs();
+            List<DemoMoneyTable> reader = dao.QueryAllUsersData(users);
+
+            return reader;
         }
     }
 }

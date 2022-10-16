@@ -24,6 +24,23 @@
                     <li>@Html.ActionLink("首頁", "Index", "Home")</li>
                     <li>@Html.ActionLink("關於", "About", "Home")</li>
                     <li>@Html.ActionLink("連絡人", "Contact", "Home")</li>
+                    @{
+                        int i = 1;
+                        HttpCookieCollection MyCookieColl;
+                        MyCookieColl = Request.Cookies;
+                        String[] arr1 = MyCookieColl.AllKeys;
+                        if (Request.Cookies["UserKeepLogin"] == null)
+                        {
+                            <li>@Html.ActionLink("註冊", "SignUp", "Users")</li>
+                            <li>@Html.ActionLink("登入", "Login", "Users")</li>
+                        }
+                        else
+                        {
+                            <li>@Html.ActionLink("會員資訊", "MemberCentre", "Users")</li>
+                            <li>@Html.ActionLink("變更密碼", "ChangePassword", "Users")</li>
+                            <li>@Html.ActionLink("登出", "SignOut", "Users")</li>
+                        }
+                    }
                 </ul>
             </div>
         </div>

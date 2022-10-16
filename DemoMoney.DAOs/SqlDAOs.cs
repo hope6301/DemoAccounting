@@ -1,4 +1,6 @@
-﻿using DemoMoney.Models.Models;
+﻿using Dapper;
+using DemoMoney.Models.Models;
+using NPOI.SS.Formula.Functions;
 using NPOI.SS.Formula.PTG;
 using System;
 using System.Collections.Generic;
@@ -12,8 +14,9 @@ namespace DemoMoney.DAOs
 {
     public class SqlDAOs
     {
+        // ADO.NET 執行 用法
         // ExecuteNonQuery( ) 
-        // 主要用來執行INSERT、UPDATE、DELETE和其他沒有返回值得SQL命令。
+        // 主要用來執行INSERT、UPDATE、DELETE和其他沒有返回值得SQL命令
 
         //ExecuteScalar( )
         //返回結果集為：第一列的第一行。
@@ -25,10 +28,13 @@ namespace DemoMoney.DAOs
         //返回為DataReader物件，如果在SqlCommand物件中調用，則返回SqlDataReader。
         //對SqlDataReader.Read的每次調用都會從結果集中返回一行。
 
-        string sqlstring = "Data Source=DESKTOP-FE43T7V;Initial Catalog=DemoMoney;Integrated Security=True";
+        /// <summary>
+        /// 連線字串
+        /// </summary>
+        private readonly string sqlstring = "Data Source=DESKTOP-FE43T7V;Initial Catalog=DemoMoney;Integrated Security=True";
 
         /// <summary>
-        /// 執行新增修改刪除 方法
+        /// ADO.NET 執行新增修改刪除 方法
         /// </summary>
         /// <param name="sql"></param>
         /// <returns></returns>
@@ -92,12 +98,12 @@ namespace DemoMoney.DAOs
         /// 查詢需下載資料
         /// </summary>
         /// <returns></returns>
-        public List<DemoMoneyTable> DownloadAll()
+        public List<DemoMoneyTable> QueryAllUsersData(string users)
         {
             SqlConnection conn = new SqlConnection(sqlstring);
             conn.Open();
 
-            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE DeleteOrNot = 'N'");
+            string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE DeleteOrNot = 'N' AND users = '{0}'",users);
 
             SqlCommand cmd = new SqlCommand(sql, conn);
 
@@ -139,22 +145,14 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public int SelectAllLength()
         {
-            SqlConnection conn = new SqlConnection(sqlstring);
-            conn.Open();
+            //Dapper 查詢寫法
+            var sql = @"select COUNT(*) from [dbo].[DemoMoneyTable]";
 
-            string sql = string.Format(@"select COUNT(*) from [dbo].[DemoMoneyTable]");
-
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            //取得SQL資料
-            //SqlDataReader dr = cmd.ExecuteReader();
-            var SqlAllLength = cmd.ExecuteScalar();
-            
-            cmd.Cancel();
-            conn.Close();
-            conn.Dispose();
-
-            return (int)SqlAllLength;
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result = conn.QueryFirstOrDefault<int>(sql);
+                return result;
+            }
         }
 
         /// <summary>
@@ -164,30 +162,42 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public int SelectEndId(int idalllength)
         {
-            SqlConnection conn = new SqlConnection(sqlstring);
-            conn.Open();
 
             string sql = string.Format(@" select *
                                          from dbo.DemoMoneyTable
                                          order by ID
                                          offset {0}-1 row                                 
-                                         fetch next 1 rows only",idalllength);
+                                         fetch next 1 rows only", idalllength);
 
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            //取得SQL資料
-            //SqlDataReader dr = cmd.ExecuteReader();
-            var endidvalue = cmd.ExecuteScalar();
-            if(endidvalue == null)
+            using (var conn = new SqlConnection(sqlstring))
             {
-                endidvalue = 0;
+                var result = conn.QueryFirstOrDefault<int>(sql);
+                return (int)result;
             }
 
-            cmd.Cancel();
-            conn.Close();
-            conn.Dispose();
 
-            return (int)endidvalue;
+            //SqlConnection conn = new SqlConnection(sqlstring);
+            //conn.Open();
+
+            //string sql = string.Format(@" select *
+            //                             from dbo.DemoMoneyTable
+            //                             order by ID
+            //                             offset {0}-1 row                                 
+            //                             fetch next 1 rows only",idalllength);
+
+            //SqlCommand cmd = new SqlCommand(sql, conn);
+
+            ////取得SQL資料
+            ////SqlDataReader dr = cmd.ExecuteReader();
+            //var endidvalue = cmd.ExecuteScalar();
+            //if(endidvalue == null)
+            //{
+            //    endidvalue = 0;
+            //}
+
+            //cmd.Cancel();
+            //conn.Close();
+            //conn.Dispose();
         }
 
         /// <summary>
@@ -197,34 +207,40 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public DemoMoneyTable SelectID(int id)
         {
-            SqlConnection conn = new SqlConnection(sqlstring);
-            conn.Open();
+            //SqlConnection conn = new SqlConnection(sqlstring);
+            //conn.Open();
+
+            //string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE (ID={0} and DeleteOrNot = 'N')", id);
+
+            //SqlCommand cmd = new SqlCommand(sql, conn);
+
+            ////取得SQL資料
+            //SqlDataReader dr = cmd.ExecuteReader();
+
+            //DemoMoneyTable demomoneytable = new DemoMoneyTable();
+
+            //if (dr.Read())
+            //{
+            //    demomoneytable.ID = Convert.ToInt32(dr["ID"]);
+            //    demomoneytable.date = Convert.ToDateTime(dr["date"]);
+            //    demomoneytable.money = Convert.ToInt32(dr["money"]);
+            //    demomoneytable.category = dr["category"].ToString();
+            //    demomoneytable.remark = dr["remark"].ToString();
+            //    demomoneytable.InAndOut = dr["InAndOut"].ToString();
+            //    demomoneytable.DeleteOrNot = dr["DeleteOrNot"].ToString();
+            //}
+
+            //cmd.Cancel();
+            //conn.Close();
+            //conn.Dispose();
 
             string sql = string.Format(@"select * from [dbo].[DemoMoneyTable] WHERE (ID={0} and DeleteOrNot = 'N')", id);
 
-            SqlCommand cmd = new SqlCommand(sql, conn);
-
-            //取得SQL資料
-            SqlDataReader dr = cmd.ExecuteReader();
-
-            DemoMoneyTable demomoneytable = new DemoMoneyTable();
-
-            if (dr.Read())
+            using (var conn = new SqlConnection(sqlstring))
             {
-                demomoneytable.ID = Convert.ToInt32(dr["ID"]);
-                demomoneytable.date = Convert.ToDateTime(dr["date"]);
-                demomoneytable.money = Convert.ToInt32(dr["money"]);
-                demomoneytable.category = dr["category"].ToString();
-                demomoneytable.remark = dr["remark"].ToString();
-                demomoneytable.InAndOut = dr["InAndOut"].ToString();
-                demomoneytable.DeleteOrNot = dr["DeleteOrNot"].ToString();
+                var demomoneytable = conn.QueryFirstOrDefault<DemoMoneyTable>(sql);
+                return demomoneytable;
             }
-
-            cmd.Cancel();
-            conn.Close();
-            conn.Dispose();
-
-            return demomoneytable;
         }
 
         /// <summary>
@@ -233,21 +249,34 @@ namespace DemoMoney.DAOs
         /// <param name="demomoneytable"></param>
         public int Create(DemoMoneyTable demomoneytable)
         {
-            int ID = demomoneytable.ID;
-            DateTime date = demomoneytable.date;
-            string category = demomoneytable.category;
-            int money = demomoneytable.money;
-            string remark = demomoneytable.remark;
-            string InAndOut = demomoneytable.InAndOut;
-            string DeleteOrNot = "N";
+            var sql = @"INSERT INTO [dbo].[DemoMoneyTable]
+                        (
+                            [ID],
+                            [date],
+                            [category],
+                            [money],
+                            [remark],
+                            [InAndOut],
+                            [DeleteOrNot],
+                            [users]
+                        )
+                        VALUES
+                        (
+                            @id,
+                            @DATE,
+                            @CATEGORY,
+                            @MONEY,
+                            @remark,
+                            @InAndOut,
+                            @DeleteOrNot,
+                            @users
+                        )";
 
-            string sql = string.Format(@"INSERT INTO [dbo].[DemoMoneyTable]
-                                            ([ID],[date],[category],[money],[remark],[InAndOut],[DeleteOrNot])
-                                            VALUES({0},'{1}','{2}',{3},'{4}','{5}','{6}')", ID, date.ToString("yyyy/MM/dd"), category, money, remark, InAndOut, DeleteOrNot
-                                            );
-
-            int result = NonQuery(sql);
-            return (int)result;
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result = conn.Execute(sql, demomoneytable);
+                return result;
+            }
         }
 
         /// <summary>
@@ -257,13 +286,15 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public int Delete(int id)
         {
-            //string sql = string.Format(@"DELETE FROM [dbo].[DemoMoneyTable] WHERE ID={0}", id);
             string sql = string.Format(@"UPDATE [dbo].[DemoMoneyTable]
                                             SET [DeleteOrNot] = 'Y'
                                             WHERE ID = {0}", id);
 
-            int result = NonQuery(sql);
-            return result;
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result = conn.Execute(sql);
+                return result;
+            }
         }
         
         /// <summary>
@@ -273,28 +304,21 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public int Edit(DemoMoneyTable demomoneytable)
         {
-            //string sql = string.Format(@"DELETE FROM [dbo].[DemoMoneyTable] WHERE ID={0}", id);
+            var sql = @"UPDATE [dbo].[DemoMoneyTable]
+                                           SET [ID] = @id
+                                              ,[date] = @date
+                                              ,[category] = @category
+                                              ,[money] = @money
+                                              ,[remark] = @remark
+                                              ,[InAndOut] = @InAndOut
+                                              ,[DeleteOrNot] = @DeleteOrNot
+                                         WHERE ID = @id";
 
-            int ID = demomoneytable.ID;
-            DateTime date = demomoneytable.date;
-            string category = demomoneytable.category;
-            int money = demomoneytable.money;
-            string remark = demomoneytable.remark;
-            string InAndOut = demomoneytable.InAndOut;
-            string DeleteOrNot = demomoneytable.DeleteOrNot;
-
-            string sql = string.Format(@"UPDATE [dbo].[DemoMoneyTable]
-                                           SET [ID] = {0}
-                                              ,[date] = '{1}'
-                                              ,[category] = '{2}'
-                                              ,[money] = {3}
-                                              ,[remark] = '{4}'
-                                              ,[InAndOut] = '{5}'
-                                              ,[DeleteOrNot] = '{6}'
-                                         WHERE ID = {0}", ID, date.ToString("yyyy/MM/dd"), category,money,remark,InAndOut,DeleteOrNot);
-
-            int result = NonQuery(sql);
-            return result;
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result = conn.Execute(sql, demomoneytable);
+                return result;
+            }
         }
 
     }

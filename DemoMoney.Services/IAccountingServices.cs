@@ -10,11 +10,15 @@ namespace DemoMoney.Services
 {
     public interface IAccountingServices
     {
+        List<DemoMoneyTable> listSelectAll(string users);
+
+        LietDemoMoneyTable SelectAll();
+
         DemoMoneyTable SelectID(int id);
-        ServiceResult<bool> Create(DemoMoneyTable demomoneytable);
+        ServiceResult<bool> Create(DemoMoneyTable demomoneytable ,string account);
         ServiceResult<bool> Edit(DemoMoneyTable demomoneytable);
         ServiceResult<bool> Delete(int id);
-        ServiceResult<bool> UpFile(HttpPostedFileBase demomoneytable);
+        ServiceResult<bool> UpFile(HttpPostedFileBase demomoneytable,string account);
 
         ServiceResult<bool> DownloadAll();
     }
