@@ -10,12 +10,12 @@ namespace DemoMoney.Services
 {
     public interface IAccountingServices
     {
-        List<DemoMoneyTable> listSelectAll(string users);
+        List<DemoMoneyTable> listQueryDateSelectAll(string users,string startdatevalue ,string finishdatevalue);
 
         LietDemoMoneyTable SelectAll();
 
         DemoMoneyTable SelectID(int id);
-        ServiceResult<bool> Create(DemoMoneyTable demomoneytable ,string account);
+        ServiceResult<bool> Create(DemoMoneyTable demomoneytable);
         ServiceResult<bool> Edit(DemoMoneyTable demomoneytable);
         ServiceResult<bool> Delete(int id);
         ServiceResult<bool> UpFile(HttpPostedFileBase demomoneytable,string account);

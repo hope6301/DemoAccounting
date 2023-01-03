@@ -25,6 +25,7 @@ namespace DemoMoney.Services
 
         ServiceResult<bool> EditPassword(string account,string NewPassword);
 
+        bool QueryPassword(string Account, string Password);
     }
 
 

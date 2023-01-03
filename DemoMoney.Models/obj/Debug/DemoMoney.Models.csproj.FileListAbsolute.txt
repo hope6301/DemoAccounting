@@ -11,3 +11,4 @@ D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csproj.CoreCompile
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csproj.CopyComplete
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.dll
 D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.pdb
+D:\code\DemoMoney\DemoMoney.Models\obj\Debug\DemoMoney.Models.csprojAssemblyReference.cache

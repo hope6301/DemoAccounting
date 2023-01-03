@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using DemoMoney.DAOs;
@@ -8,27 +11,28 @@ using DemoMoney.Services;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using OfficeOpenXml;
+using PagedList;
 
 namespace DemoMoney.Controllers
 {
     public class DemoMoneyController : Controller
     {
         // GET: DemoMoney
-        public ActionResult Index()
+        public ActionResult Index(string startdatevalue,string finishdatevalue , int Page = 1)
         {
-            //DemoMoneyEntities content = new DemoMoneyEntities();
-            //var result = content.DemoMoneyTable;
 
-            //AccountingServices services = new AccountingServices();
-            //List<DemoMoneyTable> demoMoneyTables = services.listSelectAll();
-            //ViewBag.Message = TempData["Message"] as string;
-
-            if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
+            // true = 沒登入
+            // false = 有登入 顯示資料
+            if (Request.Cookies["UserKeepLogin"] == null || string.IsNullOrWhiteSpace(Request.Cookies["UserKeepLogin"].Value))
             {
                 List<DemoMoneyTable> demoMoneyTables = new List<DemoMoneyTable>();
-                if(TempData["Message"] as string == "" || TempData["Message"] as string == null )
+
+                if (TempData["Message"] as string == "" || TempData["Message"] as string == null )
                 {
                     ViewBag.Message = "請登入";
+                    Session["startdatevalue"] = "";
+                    Session["finishdatevalue"] = "";
                 }
                 else
                 {
@@ -38,17 +42,55 @@ namespace DemoMoney.Controllers
             }
             else
             {
+
+                //初始查詢，預設傳回過去30天的資料
+                if (string.IsNullOrWhiteSpace(startdatevalue) || string.IsNullOrWhiteSpace(finishdatevalue))
+                {
+                    startdatevalue = DateTime.Now.AddDays(-30).ToString("yyyy/MM/dd");
+                    finishdatevalue = DateTime.Now.ToString("yyyy/MM/dd");
+
+                    if (!string.IsNullOrWhiteSpace(Session["startdatevalue"].ToString()) || !string.IsNullOrWhiteSpace(Session["finishdatevalue"].ToString()))
+                    {
+                        startdatevalue = Session["startdatevalue"].ToString();
+                        finishdatevalue = Session["finishdatevalue"].ToString();
+                    }
+                }
+                else
+                {
+                    //如果使用者選擇時間段，就記錄使用者選擇的日期
+                    Session["startdatevalue"] = startdatevalue;
+                    Session["finishdatevalue"] = finishdatevalue;
+                }
                 AccountingServices services = new AccountingServices();
-                List<DemoMoneyTable> demoMoneyTables = services.listSelectAll(Session["account"].ToString());
+
+                //列出所有記帳資料
+                //List<DemoMoneyTable> demoMoneyTables = services.listSelectAll(Request.Cookies["UserKeepLogin"].Value);
                 ViewBag.Message = TempData["Message"] as string;
-                return View(demoMoneyTables);
+
+                //顯示五欄
+                const int pageSize = 10;
+
+                //傳回view分頁後的資料
+                //var demoMoneyTablesPagedList  = services.listSelectAll(Request.Cookies["UserKeepLogin"].Value).ToPagedList(Page,pageSize);
+                var demoMoneyTablesPagedList = services.listQueryDateSelectAll(Request.Cookies["UserKeepLogin"].Value,startdatevalue,finishdatevalue).ToPagedList(Page, pageSize);
+
+                return View(demoMoneyTablesPagedList);
             }
         }
 
+        /// <summary>
+        /// 查詢時間內資料傳回Index顯示
+        /// </summary>
+        /// <param name="startdatevalue">開始時間</param>
+        /// <param name="finishdatevalue">結束時間</param>
+        /// <returns></returns>
         [HttpPost]
-        public ActionResult Index(int id)
+        public ActionResult Index(string startdatevalue, string finishdatevalue)
         {
-            return View();
+            string str_startdatevalue = DateTime.Parse(startdatevalue).ToString("yyyy/MM/dd");
+            string str_finishdatevalue = DateTime.Parse(finishdatevalue).ToString("yyyy/MM/dd");
+
+            return RedirectToAction("Index", new { startdatevalue = str_startdatevalue, finishdatevalue = str_finishdatevalue });
         }
 
         [Authorize]
@@ -64,9 +106,6 @@ namespace DemoMoney.Controllers
         }
 
 
-
-
-
         // GET: DemoMoney/Details/5
         // GET: Demo/Details/5
         public ActionResult Details(int id)
@@ -77,7 +116,7 @@ namespace DemoMoney.Controllers
         // GET: Demo/Create
         public ActionResult Create()
         {
-            if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
+            if (Request.Cookies["UserKeepLogin"] == null || string.IsNullOrWhiteSpace(Request.Cookies["UserKeepLogin"].Value))
             {
                 TempData["Message"] = "沒有登入，不能新增，請登入";
                 return RedirectToAction("Index");
@@ -91,21 +130,28 @@ namespace DemoMoney.Controllers
 
         // POST: Demo/Create
         [HttpPost]
-        public ActionResult Create(FormCollection collection, DemoMoneyTable demomoneytable)
+        public ActionResult Create(FormCollection collection, DemoMoneyTable MoneyTable)
         {
+            
+            EncryptAndDecodeServices EADS = new EncryptAndDecodeServices();
+
+            string account = EADS.Decode(Session["account"].ToString());
+
             ServiceResult<bool> result = new ServiceResult<bool>();
-            string account =  Session["account"].ToString();
             try
             {
+                //將cookies的帳戶資訊傳入model
+                MoneyTable.users = Request.Cookies["UserKeepLogin"].Value;
+
                 // TODO: Add insert logic here
                 if (ModelState.IsValid)
                 {
                     AccountingServices services = new AccountingServices();
-                    result = services.Create(demomoneytable, account);
+                    result = services.Create(MoneyTable);
                 }
                 else
                 {
-                    return View(demomoneytable);
+                    return View(MoneyTable);
                 }
                 TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
@@ -234,7 +280,8 @@ namespace DemoMoney.Controllers
                 {
 
                     AccountingServices services = new AccountingServices();
-                    result = services.UpFile(file, Session["account"].ToString());
+
+                    result = services.UpFile(file, Request.Cookies["UserKeepLogin"].Value);
 
                     if (result.Result == false)
                     {
@@ -302,12 +349,21 @@ namespace DemoMoney.Controllers
         [HttpPost]
         public ActionResult textapi(UsersTableModel usersTable ,EventArgs e)
         {
-            UsersDAOs usersDAOs = new UsersDAOs();
-            bool aa =  usersDAOs.EditUsers(usersTable);
+            //UsersDAOs usersDAOs = new UsersDAOs();
+            //bool aa =  usersDAOs.EditUsers(usersTable);
 
             ServiceResult<bool> batchResult = new ServiceResult<bool>();
 
-            if (aa)
+            EncryptAndDecodeServices services = new EncryptAndDecodeServices();
+            usersTable.Account = "hope6301";
+            usersTable.Password = "Aa123456";
+
+
+            usersTable =  services.ModelEncryp(usersTable);
+
+
+
+            if (true)
             {
 
                 batchResult.Status = ServiceStatus.Success;
@@ -325,5 +381,61 @@ namespace DemoMoney.Controllers
             }
         }
 
-    }
+        [HttpPost]
+        public ActionResult Upload(HttpPostedFileBase file)
+        {
+            if (file.ContentLength > 0)
+            {
+                //我是存檔
+
+                //var fileName = Path.GetFileName(file.FileName);
+                //var path = Path.Combine(Server.MapPath("~/FileUploads"), fileName);
+                //file.SaveAs(path);
+
+                AccountingServices services = new AccountingServices();
+                services.UploadUserList(file, Request.Cookies["UserKeepLogin"].Value);
+
+                //以下是讀檔
+                if (false) {
+                    using (var excel = new ExcelPackage(file.InputStream))
+                    {
+                        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                        List<DemoMoneyTable> RowData = new List<DemoMoneyTable>();
+                        var tbl = new DataTable();
+                        var ws = excel.Workbook.Worksheets.First();
+                        var hasHeader = true;  // adjust accordingly
+                                               // add DataColumns to DataTable
+
+                        foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
+                        {
+                            tbl.Columns.Add(hasHeader ? firstRowCell.Text : String.Format("Column {0}", firstRowCell.Start.Column));
+                        }
+
+                        // add DataRows to DataTable
+                        int startRow = hasHeader ? 2 : 1;
+                        for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
+                        {
+                            //cells 儲存格超做起始值是 1
+                            //(從第幾行開始(往下數),從第幾列開始(往右數),結束行,結束列)
+                            //sheet1.Cells[3, 3, 5, 5].Value // 從 (3, 3) 一路框到 (5, 5)，包含頭尾
+                            var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
+                            DataRow row = tbl.NewRow();
+                            foreach (var cell in wsRow)
+                            {
+                                row[cell.Start.Column - 1] = cell.Text;
+                            }
+                            tbl.Rows.Add(row);
+
+                        }
+                        var msg = String.Format("DataTable successfully created from excel-file. Colum-count:{0} Row-count:{1}",
+                                                tbl.Columns.Count, tbl.Rows.Count);
+                    }
+
+
+                }
+            }
+
+            return RedirectToAction("Index");
+        }
+        }
 }

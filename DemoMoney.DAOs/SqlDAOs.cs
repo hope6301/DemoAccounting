@@ -140,6 +140,69 @@ namespace DemoMoney.DAOs
         }
 
         /// <summary>
+        /// 查詢日期範圍內資料
+        /// </summary>
+        /// <param name="users"></param>
+        /// <returns></returns>
+        public List<DemoMoneyTable> QueryDateUsersData(string users, string start, string finish)
+        {
+            SqlConnection conn = new SqlConnection(sqlstring);
+            conn.Open();
+
+            string sql = string.Format(@"select ID
+                                                ,date
+                                                ,category
+                                                ,money
+                                                ,remark
+                                                ,InAndOut from [dbo].[DemoMoneyTable] 
+                                        WHERE DeleteOrNot = 'N' 
+                                        AND users = '{0}'
+                                        AND date >= '{1}'
+                                        AND date <= '{2}'", users,start,finish);
+
+            SqlCommand cmd = new SqlCommand(sql, conn);
+
+            //取得SQL資料
+            //SqlDataReader dr = cmd.ExecuteReader();
+            var reader = cmd.ExecuteReader();
+
+            List<DemoMoneyTable> listdemomodel = new List<DemoMoneyTable>();
+
+            if (reader.HasRows)
+            {
+                while (reader.Read())
+                {
+                    listdemomodel.Add(new DemoMoneyTable()
+                    {
+                        ID = Convert.ToInt32(reader["ID"]),
+                        date = Convert.ToDateTime(reader["date"]),
+                        money = Convert.ToInt32(reader["money"]),
+                        category = reader["category"].ToString(),
+                        remark = reader["remark"].ToString(),
+                        InAndOut = reader["InAndOut"].ToString(),
+                    });
+                }
+            }
+            var lietDemoMoneyTable = new LietDemoMoneyTable();
+
+            //lietDemoMoneyTable.listdemoMoneyTables = listdemomodel;
+
+            cmd.Cancel();
+            conn.Close();
+            conn.Dispose();
+
+            return listdemomodel;
+        }
+
+
+
+
+
+
+
+
+
+        /// <summary>
         /// 查詢目前全部資料有多少筆
         /// </summary>
         /// <returns></returns>
@@ -247,7 +310,7 @@ namespace DemoMoney.DAOs
         /// 新增資料
         /// </summary>
         /// <param name="demomoneytable"></param>
-        public int Create(DemoMoneyTable demomoneytable)
+        public int Create(DemoMoneyTable MoneyTable)
         {
             var sql = @"INSERT INTO [dbo].[DemoMoneyTable]
                         (
@@ -274,7 +337,7 @@ namespace DemoMoney.DAOs
 
             using (var conn = new SqlConnection(sqlstring))
             {
-                var result = conn.Execute(sql, demomoneytable);
+                var result = conn.Execute(sql, MoneyTable);
                 return result;
             }
         }

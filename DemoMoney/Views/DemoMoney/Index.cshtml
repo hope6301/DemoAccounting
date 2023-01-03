@@ -1,4 +1,6 @@
 ﻿@model  IEnumerable<DemoMoney.Models.Models.DemoMoneyTable>
+@using PagedList
+@using PagedList.Mvc
 
 @{
     ViewBag.Title = "Index";
@@ -10,121 +12,142 @@
     <h3>@ViewBag.Message</h3>
 }
 
-<p>
-    @Html.ActionLink("Create New", "Create")
-    @Html.ActionLink("Import", "Import")
-    <table class="table">
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.ID)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.category)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.money)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.remark)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InAndOut)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DeleteOrNot)
-            </th>
-            <th></th>
-        </tr>
 
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.ID)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.date)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.category)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.money)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.remark)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.InAndOut)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.DeleteOrNot)
-                </td>
-                <td>
-                    @Html.ActionLink("Edit", "Edit", new { id = item.ID }) |
-                    @Html.ActionLink("Details", "Details", new { id = item.ID }) |
-                    @Html.ActionLink("Delete", "Delete", new { id = item.ID })
-                </td>
-            </tr>
-        }
-
-    </table>
-    <div id="toolbar">
-        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">New User</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editUser()">Edit User</a>
-        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyUser()">text api</a>
-        @{
-            if (Request.Cookies["UserKeepLogin"] != null)
-            {
-                <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>
-            }
-         }
-            @*<form id="Downloadform" method="post" action="/Demo/Button_Click">
-            <button id="Downloadbutton">下載表單</button>
-            </form>*@
+@{
+    if (Request.Cookies["UserKeepLogin"] == null || string.IsNullOrWhiteSpace(Request.Cookies["UserKeepLogin"].Value))
+    {
+        <tb>
+        </tb>
+    }
+    else
+    {
+        <div>
+            @Html.ActionLink("Create New", "Create") |
+            @Html.ActionLink("Import", "Import") |
+            @*<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>*@
+            <a href="javascript:void(0)" class="easyui-linkbutton" id="download_excel">download</a>
         </div>
-    <script type="text/javascript">
-        function download_excel() {
-            $.ajax({
-                url: '@Url.Action("Button_Click", "DemoMoney")',
-                type: 'post',
-                dataType: 'json',
-                data: { sender: 'John', location: 123},
-                success: function (response) {
-                    if (response.Result) {
-                        alert('Download Success!!' + response.Message);
-                    } else {
-                        alert('DownloadError!!' + response.Message);
-                    }
-                },
-                error: function (errer) {
-                    alert('DownloadError!!');
-                }
-            });
+        <form method="post">
+            <div>
+                <input type="date" id="start" name="startdatevalue">
+                <input type="date" id="finish" name="finishdatevalue">
+                <input type="submit" id="btnName123" value="送出日期" />
+                @*<input type="button" id="btnName" value="按鈕" />*@
+            </div>
+        </form>
+    }
+}
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.date)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.category)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.money)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.remark)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.InAndOut)
+        </th>
+        <th>修改或刪除</th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.date)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.category)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.money)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.remark)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.InAndOut)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id = item.ID }) |
+                @Html.ActionLink("Delete", "Delete", new { id = item.ID })
+            </td>
+        </tr>
+    }
+
+</table>
+
+@*有登入才顯示分頁*@
+@{
+    if (Request.Cookies["UserKeepLogin"] == null || string.IsNullOrWhiteSpace(Request.Cookies["UserKeepLogin"].Value))
+    {
+        <tb>
+        </tb>
+    }
+    else
+    {
+        @Html.PagedListPager((IPagedList)Model, page => Url.Action("Index", new { page }))
+    }
+}
+
+<div id="toolbar">
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">New User</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editUser()">Edit User</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" id="text_api">text api</a>
+    @{
+        if (Request.Cookies["UserKeepLogin"] != null)
+        {
+            <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="download_excel()">download</a>
         }
-        function destroyUser() {
-            $.ajax({
-                url: '@Url.Action("textapi", "DemoMoney")',
-                type: 'post',
-                dataType: 'json',
-                data: { sender: 'John', location: 123},
-                success: function (response) {
-                    if (response.Result) {
-                        alert('Download Success!!' + response.Message);
-                    } else {
-                        alert('DownloadError!!' + response.Message);
-                    }
-                },
-                error: function (errer) {
-                    alert('DownloadError!!');
+    }
+    @*<form id="Downloadform" method="post" action="/Demo/Button_Click">
+        <button id="Downloadbutton">下載表單</button>
+        </form>*@
+</div>
+@*<script type="text/javascript">
+    function download_excel() {
+        $.ajax({
+            url: '@Url.Action("Button_Click", "DemoMoney")',
+            type: 'post',
+            dataType: 'json',
+            data: { sender: 'John', location: 123},
+            success: function (response) {
+                if (response.Result) {
+                    alert('Download Success!!' + response.Message);
+                } else {
+                    alert('DownloadError!!' + response.Message);
                 }
-            });
-        }
+            },
+            error: function (errer) {
+                alert('DownloadError!!');
+            }
+        });
+    }
+    function destroyUser() {
+        $.ajax({
+            url: '@Url.Action("textapi", "DemoMoney")',
+            type: 'post',
+            dataType: 'json',
+            data: { sender: 'John', location: 123},
+            success: function (response) {
+                if (response.Result) {
+                    alert('Download Success!!' + response.Message);
+                } else {
+                    alert('DownloadError!!' + response.Message);
+                }
+            },
+            error: function (errer) {
+                alert('DownloadError!!');
+            }
+        });
+    }
+</script>*@
 
-
-
-
-    </script>
+<script src="~/Scripts/js-Index.js"></script>

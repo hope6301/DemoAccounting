@@ -29,16 +29,19 @@ namespace DemoMoney.Controllers
         [HttpPost]
         public ActionResult SignUp(FormCollection collection,UsersTableModel usersmodel)
         {
-            ServiceResult<bool> result = new ServiceResult<bool>();
             try
             {
-                
                 UsersServices services = new UsersServices();
-                result = services.CreateUsers(usersmodel);
+                ServiceResult<bool> result = services.CreateUsers(usersmodel);
+
                 if (result.Result)
                 {
+
                     Session["account"] = usersmodel.Account;
-                    FormsAuthentication.SetAuthCookie(usersmodel.Account,false);
+                    Session["startdatevalue"] = "";
+                    Session["finishdatevalue"] = "";
+
+                    FormsAuthentication.SetAuthCookie(usersmodel.Account, false);
 
                     //記入 cookie
                     HttpCookie ckUserKeepLogin = new HttpCookie("UserKeepLogin");
@@ -79,38 +82,56 @@ namespace DemoMoney.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Login(FormCollection collection,UsersTableModel usersmodel)
         {
-            ServiceResult<bool> result = new ServiceResult<bool>();
-            UsersServices services = new UsersServices();
-            result = services.UsersLogin(usersmodel);
-
-            if (result.Result)
+            try
             {
-                //將使用者資訊存放到伺服器端
-                Session["account"] = usersmodel.Account;
-                Session["password"] = usersmodel.Password;
+                ServiceResult<bool> result = new ServiceResult<bool>();
+                UsersServices services = new UsersServices();
+                result = services.UsersLogin(usersmodel);
 
-                FormsAuthentication.SetAuthCookie(usersmodel.Account, false);
-                
-                //記入 cookie
-                HttpCookie ckUserKeepLogin = new HttpCookie("UserKeepLogin");
-                ckUserKeepLogin.Value = usersmodel.Account;
-                ckUserKeepLogin.Expires = DateTime.Now.AddDays(1);
-                //避免cookie被js存取
-                ckUserKeepLogin.HttpOnly = true;
-                Response.Cookies.Add(ckUserKeepLogin);
-
-                return RedirectToAction("Index", "DemoMoney");
-            }
-            else
-            {
-                if(result.Status == 0)
+                if (result.Result)
                 {
-                    ViewBag.Message = result.Message;
-                    return View();
-                }
+                    //將使用者資訊存放到伺服器端
+                    Session["account"] = usersmodel.Account;
+                    Session["startdatevalue"] = "";
+                    Session["finishdatevalue"] = "";
 
-                TempData["Message"] = result.Message;
-                return RedirectToAction("SignUp");
+                    FormsAuthentication.SetAuthCookie(usersmodel.Account, createPersistentCookie:false);
+
+                    //記入 cookie
+                    HttpCookie ckUserKeepLogin = new HttpCookie("UserKeepLogin");
+
+                    //存入cookie的值
+                    ckUserKeepLogin.Value = usersmodel.Account;
+
+                    //設置 cookie的紀錄時間
+                    //不設置時間 瀏覽器關閉就會清除(跟隨瀏覽器的生命週期)
+                    //ckUserKeepLogin.Expires = DateTime.Now.AddDays(1);
+
+                    //避免cookie被js存取
+                    ckUserKeepLogin.HttpOnly = true;
+                    Response.Cookies.Add(ckUserKeepLogin);
+
+                    TempData["Message"] = result.Message;
+                    return RedirectToAction("Index", "DemoMoney");
+                }
+                else
+                {
+                    //密碼不正確
+                    if (result.Status == 0)
+                    {
+                        ViewBag.Message = result.Message;
+                        return View();
+                    }
+
+                    //找不到使用者，未註冊過
+                    TempData["Message"] = result.Message;
+                    return RedirectToAction("SignUp");
+                }
+            }
+            catch(Exception e)
+            {
+                ViewBag.Message = e.Message;
+                return View();
             }
         }
         
@@ -121,14 +142,17 @@ namespace DemoMoney.Controllers
         public ActionResult SignOut()
         {
             Session.RemoveAll();
-            //記入 cookie
 
-            int limit0 = Request.Cookies.Count;
-            HttpCookie ckUserKeepLogin = new HttpCookie("UserKeepLogin");
-            ckUserKeepLogin.Expires = DateTime.Now.AddDays(-5);
-            ckUserKeepLogin.Values.Clear();
-            ckUserKeepLogin.Values.Remove("UserKeepLogin");
-            Response.Cookies.Add(ckUserKeepLogin);
+            //HttpCookie ckUserKeepLogin = new HttpCookie("UserKeepLogin");
+            //ckUserKeepLogin.Expires = DateTime.Now.AddDays(-5);
+            //ckUserKeepLogin.Values.Clear();
+            //ckUserKeepLogin.Values.Remove("UserKeepLogin");
+            //Response.Cookies.Add(ckUserKeepLogin);
+
+
+            HttpContext.Response.Cookies["UserKeepLogin"].Expires = DateTime.Now.AddDays(-1);
+
+            FormsAuthentication.SignOut();
 
             TempData["Message"] = "登出成功";
 
@@ -143,11 +167,7 @@ namespace DemoMoney.Controllers
         {
             UsersServices usersServices = new UsersServices();
 
-            //string account = Session["account"].ToString();
-
-            string account = "hope6301";
-
-            UsersTableModel usersTable = usersServices.UserInformation(account);
+            UsersTableModel usersTable = usersServices.UserInformation(Session["account"].ToString());
 
             return View(usersTable);
         }
@@ -161,25 +181,17 @@ namespace DemoMoney.Controllers
         [HttpPost]
         public ActionResult EditUsers(UsersTableModel usersTable, EventArgs e)
         {
-            ServiceResult<bool> result = new ServiceResult<bool>();
-
-            UsersServices usersServices = new UsersServices();
-            result = usersServices.EditUser(usersTable);
-
-            if (result.Result)
+            try
             {
-                result.Status = ServiceStatus.Success;
-                result.Result = true;
-                result.Message = "下載成功";
-
+                ServiceResult<bool> result = new ServiceResult<bool>();
+                UsersServices usersServices = new UsersServices();
+                result = usersServices.EditUser(usersTable);
                 return Json(result);
             }
-            else
+            catch(Exception error)
             {
-                result.Status = ServiceStatus.Failure;
-                result.Result = false;
-                result.Message = "下載失敗";
-                return Json(result);
+                TempData["Message"] = error.Message;
+                return RedirectToAction("MemberCentre");
             }
         }
 
@@ -189,90 +201,68 @@ namespace DemoMoney.Controllers
         /// <returns></returns>
         public ActionResult ChangePassword()
         {
-            int i = 1;
-
             return View();
         }
+
 
         /// <summary>
         /// 變更密碼
         /// </summary>
+        /// <param name="OldPassword">舊密碼</param>
+        /// <param name="newpsw">新密碼</param>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult ChangePassword(string currentpsw,string newpsw,string repeatnewpsw)
+        public ActionResult ChangePassword(string OldPassword, string NewPassword)
         {
             ServiceResult<bool> result = new ServiceResult<bool>() { Status = ServiceStatus.Failure, Result = false, Message = "未登入" };
             try
             {
+                EncryptAndDecodeServices EADS = new EncryptAndDecodeServices();
+                UsersServices usersServices = new UsersServices();
                 string account = Session["account"].ToString();
-                string password = Session["password"].ToString();
 
-                //判斷密碼不能為空
-                if (currentpsw != null && currentpsw != "")
+                //傳入密碼到services 做判斷，舊密碼是否正確
+                if(usersServices.QueryPassword(account, OldPassword))
                 {
-                    if(password == currentpsw)
+                    if (OldPassword != NewPassword)
                     {
-                        if(currentpsw != newpsw)
+                        //可以修改密碼
+                        result = usersServices.EditPassword(account, NewPassword);
+                        if (result.Result)
                         {
-                            if (newpsw == repeatnewpsw)
-                            {
-                                UsersServices usersServices = new UsersServices();
-                                result = usersServices.EditPassword(account, newpsw);
-                                if (result.Result)
-                                {
-                                    ViewBag.Message = result.Message;
-                                    Session["password"] = newpsw;
-                                    //密碼修改成功
-                                    return Json(result);
-                                }
-                                else
-                                {
-                                    return Json(result);
-                                }
-                            }
-                            else
-                            {
-                                result.Status = ServiceStatus.Failure;
-                                result.Result = false;
-                                result.Message = "新密碼兩次輸入不同";
-                                ViewBag.Message = result.Message;
-                                //重複密碼錯誤
-                                return Json(result);
-                            }
+                            ViewBag.Message = result.Message;
+                            //密碼修改成功
+                            return Json(result);
                         }
                         else
                         {
-                            result.Status = ServiceStatus.Failure;
-                            result.Result = false;
-                            result.Message = "新舊密碼不能一樣";
-                            ViewBag.Message = result.Message;
-                            //重複密碼錯誤
                             return Json(result);
                         }
                     }
                     else
                     {
+                        //新舊密碼不能一樣
                         result.Status = ServiceStatus.Failure;
                         result.Result = false;
-                        result.Message = "密碼錯誤";
+                        result.Message = "新舊密碼不能一樣";
                         ViewBag.Message = result.Message;
-                        //密碼錯誤
+                        //重複密碼錯誤
                         return Json(result);
                     }
                 }
                 else
                 {
+                    //密碼錯誤
                     result.Status = ServiceStatus.Failure;
                     result.Result = false;
-                    result.Message = "請輸入現有密碼";
+                    result.Message = "密碼錯誤";
                     ViewBag.Message = result.Message;
-                    //密碼不能為空
+                    //密碼錯誤
                     return Json(result);
                 }
             }
             catch(Exception e)
             {
-
                 ViewBag.Message = e.Message;
                 return Json(result);
             }

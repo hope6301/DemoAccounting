@@ -21,41 +21,38 @@ namespace DemoMoney.DAOs
         /// <returns></returns>
         public bool CreateUsers(UsersTableModel usersmodel)
         {
-            //判斷用戶是否存在
-            bool exist =   this.UsersExist(usersmodel.Account);
+            usersmodel.DeletOrNotUser = "N";
+            var InsertSql = @"INSERT INTO [dbo].[UsersTable]
+                                        (
+                                        [Account]
+                                        ,[Password]
+                                        ,[Last_name]
+                                        ,[First_name]
+                                        ,[DeletOrNotUser]
+                                        )
+                                        VALUES
+                                        (
+                                            @Account,
+                                            @Password,
+                                            @Last_name,
+                                            @First_name,
+                                            @DeletOrNotUser
+                                        )";
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result =  conn.Execute(InsertSql, usersmodel);
 
-            //用戶存在傳回flase
-            if (exist)
-            {
-                //新增用戶失敗
-                return false;
-            }
-            //用戶不存在，新增用戶。
-            else
-            {
-                usersmodel.DeletOrNotUser = "N";
-                var InsertSql = @"INSERT INTO [dbo].[UsersTable]
-                                           (
-                                            [Account]
-                                           ,[Password]
-                                           ,[Last_name]
-                                           ,[First_name]
-                                           ,[DeletOrNotUser]
-                                            )
-                                            VALUES
-                                            (
-                                                @Account,
-                                                @Password,
-                                                @Last_name,
-                                                @First_name,
-                                                @DeletOrNotUser
-                                            )";
-                using (var conn = new SqlConnection(sqlstring))
+                //判斷是否新增成功
+                if (result > 0)
                 {
-                    var result =  conn.Execute(InsertSql, usersmodel);
+                    //用戶新增成功
+                    return true;
                 }
-                //新增用戶成功
-                return true;
+                else
+                {
+                    //用戶新增失敗
+                    return false;
+                }
             }
         }
 
@@ -76,13 +73,13 @@ namespace DemoMoney.DAOs
         }
 
         /// <summary>
-        /// 判斷用戶是否存在
+        /// 判斷用戶(帳號)是否存在
         /// </summary>
         /// <param name="account">帳號</param>
         /// <returns></returns>
         public bool UsersExist(string account)
         {
-            var sql = @"select top 1 1 from dbo.userstable where [Account] = @account";
+            var sql = @"select top 1 1 from dbo.userstable where [Account] = @account AND [DeletOrNotUser] = 'N' ";
 
             using (var conn = new SqlConnection(sqlstring))
             {
@@ -102,12 +99,37 @@ namespace DemoMoney.DAOs
         }
 
         /// <summary>
-        /// 判斷用戶是否存在，並帳號密碼是否正確
+        /// 透過帳號取回密碼(加密)
+        /// </summary>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public string RetrievePassword(string account)
+        {
+            var sqlExist = @"select Password from dbo.userstable where [Account] = @account AND [DeletOrNotUser] = 'N'";
+
+            using (var conn = new SqlConnection(sqlstring))
+            {
+                var result = conn.QueryFirstOrDefault<string>(sqlExist, new { account = account });
+
+                    return result;
+
+            }
+        }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// 查詢密碼是否正確
         /// </summary>
         /// <param name="account">帳號</param>
         /// <param name="password">密碼</param>
         /// <returns></returns>
-        public int UsersExist(string account,string password)
+        public bool QueryPassword(string account,string password)
         {
             var sqlExist = @"select top 1 1 from dbo.userstable where [Account] = @account AND [Password] = @password";
 
@@ -124,28 +146,15 @@ namespace DemoMoney.DAOs
 
                 var result = conn.QueryFirstOrDefault<int>(sqlExist,new { account= account, password = password });
 
-                //登入是否成功
-                if (result>0)
+                if(result == 0)
                 {
-                    ////登入成功
-                    return 1;
+                    // 密碼錯誤
+                    return false;
                 }
-                //登入出錯
                 else
                 {
-                    //判斷帳號是否存在
-                    bool rxist = this.UsersExist(account);
-
-                    //用戶存在
-                    if (rxist)
-                    {
-                        return 0;
-                    }
-                    //用戶不存在
-                    else
-                    {
-                        return 3;
-                    }
+                    // 密碼正確
+                    return true;
                 }
             }
         }
@@ -178,7 +187,13 @@ namespace DemoMoney.DAOs
         }
 
 
-        public bool EditPassword(string account,string newpassword)
+        /// <summary>
+        /// 修改密碼
+        /// </summary>
+        /// <param name="Account">帳號</param>
+        /// <param name="EncryptNewPassword">加密的新密碼</param>
+        /// <returns></returns>
+        public bool EditPassword(string Account,string EncryptNewPassword)
         {
             var sql = @"UPDATE [dbo].UsersTable
                                            SET [Password] = @Password
@@ -186,7 +201,7 @@ namespace DemoMoney.DAOs
             
             using (var conn = new SqlConnection(sqlstring))
             {
-                var result = conn.Execute(sql, new { Account = account, Password = newpassword });
+                var result = conn.Execute(sql, new { Account = Account, Password = EncryptNewPassword });
                 //密碼是否修改成功
                 if (result > 0)
                 {

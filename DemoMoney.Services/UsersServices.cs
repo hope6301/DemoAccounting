@@ -19,19 +19,39 @@ namespace DemoMoney.Services
         {
             ServiceResult<bool> result = new ServiceResult<bool>();
             UsersDAOs usersDaos = new UsersDAOs();
-            if (usersDaos.CreateUsers(uersmodel))
-            {
-                result.Status = ServiceStatus.Success;
-                result.Result = true;
-                result.Message = "註冊成功";
-                return result;
-            }
-            else
+
+            //判斷用戶是否存在
+            // true:用戶存在
+            // false:用戶不存在
+            if (usersDaos.UsersExist(uersmodel.Account))
             {
                 result.Status = ServiceStatus.Failure;
                 result.Result = false;
                 result.Message = "帳號已被註冊";
                 return result;
+            }
+            else
+            {
+                //以加密的密碼回傳給model，儲存進SQL
+                uersmodel.Password = EncryptAndDecode.Base64Encrypt(uersmodel.Password);
+                
+                if (usersDaos.CreateUsers(uersmodel))
+                {
+                    //加密帳號，傳回前台給cookie使用
+                    uersmodel.Account = EncryptAndDecode.Base64Encrypt(uersmodel.Account);
+
+                    result.Status = ServiceStatus.Success;
+                    result.Result = true;
+                    result.Message = "註冊成功";
+                    return result;
+                }
+                else
+                {
+                    result.Status = ServiceStatus.Failure;
+                    result.Result = false;
+                    result.Message = "註冊發生不明問題，請洽管理員";
+                    return result;
+                }
             }
         }
 
@@ -42,45 +62,50 @@ namespace DemoMoney.Services
         /// <returns></returns>
         public ServiceResult<bool> UsersLogin(UsersTableModel uersmodel)
         {
+
             ServiceResult<bool> result = new ServiceResult<bool>();
             UsersDAOs usersDaos = new UsersDAOs();
 
             string acc = uersmodel.Account;
-            string psw = uersmodel.Password;
 
-            switch (usersDaos.UsersExist(acc, psw))
+            //確認使用者是否註冊過
+            if (usersDaos.UsersExist(acc))
             {
-                //用戶登入成功
-                case 1: 
-                    {
-                        result.Status = ServiceStatus.Success;
-                        result.Result = true;
-                        result.Message = "登入成功";
-                        return result;
-                    }
-                //用戶存在，密碼不對
-                case 0:
-                    {
-                        result.Status = ServiceStatus.Failure;
-                        result.Result = false;
-                        result.Message = "密碼不正確";
-                        return result;
-                    }
-                //用戶不存在，請註冊
-                case 3:
-                    {
-                        result.Status = ServiceStatus.NotFound;
-                        result.Result = false;
-                        result.Message = "用戶不存在請註冊";
-                        return result;
-                    }
-                default:
+                //有註冊過：確認密碼是否正確
+
+                //取回加密的密碼
+                string EncryptPassword = usersDaos.RetrievePassword(acc);
+                string DecryptPassword = EncryptAndDecode.Base64Decrypt(EncryptPassword);
+
+                //密碼正確：登入成功
+                if (uersmodel.Password == DecryptPassword)
+                {
+                    uersmodel.Account = EncryptAndDecode.Base64Encrypt(acc);
+                    uersmodel.Password = EncryptPassword;
+
+                    result.Status = ServiceStatus.Success;
+                    result.Result = true;
+                    result.Message = "登入成功";
+
+                    return result;
+                }
+                //密碼錯誤：顯示錯誤
+                else
+                {
                     result.Status = ServiceStatus.Failure;
                     result.Result = false;
-                    result.Message = "不知名錯誤";
+                    result.Message = "密碼不正確";
                     return result;
+                }
             }
-
+            else
+            {
+                //沒註冊過：跳去註冊頁
+                result.Status = ServiceStatus.NotFound;
+                result.Result = false;
+                result.Message = "用戶不存在請註冊";
+                return result;
+            }
         }
 
         /// <summary>
@@ -93,23 +118,26 @@ namespace DemoMoney.Services
             UsersTableModel userstable = new UsersTableModel();
             UsersDAOs usersDaos = new UsersDAOs();
 
-            userstable = usersDaos.QueryUserInformation(Account);
-
-
+            userstable = usersDaos.QueryUserInformation(EncryptAndDecode.Base64Decrypt(Account));
 
             return userstable;
         }
 
+        /// <summary>
+        /// 修改使用者資訊
+        /// </summary>
+        /// <param name="usersTable"></param>
+        /// <returns></returns>
         public ServiceResult<bool> EditUser(UsersTableModel usersTable)
         {
             ServiceResult<bool> result = new ServiceResult<bool>();
             UsersDAOs usersDaos = new UsersDAOs();
 
+
             bool editresult = usersDaos.EditUsers(usersTable);
 
             if (editresult)
             {
-
                 result.Status = ServiceStatus.Success;
                 result.Result = true;
                 result.Message = "修改成功";
@@ -123,18 +151,41 @@ namespace DemoMoney.Services
                 return result;
             }
         }
+
+        /// <summary>
+        /// 查詢密碼是否正確
+        /// </summary>
+        /// <param name="Account">帳號</param>
+        /// <param name="Password">密碼</param>
+        /// <returns></returns>
+        public bool QueryPassword(string Account, string Password)
+        {
+            UsersDAOs usersDAOs = new UsersDAOs();
+            string DecodeAccount = EncryptAndDecode.Base64Decrypt(Account);
+            string EncryptPassword = EncryptAndDecode.Base64Encrypt(Password);
+
+            if(usersDAOs.QueryPassword(DecodeAccount, EncryptPassword))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// 修改密碼
         /// </summary>
-        /// <param name="account"></param>
-        /// <param name="password"></param>
+        /// <param name="Account">帳號</param>
+        /// <param name="NewPassword">新密碼</param>
         /// <returns></returns>
-        public ServiceResult<bool> EditPassword(string account, string NewPassword)
+        public ServiceResult<bool> EditPassword(string Account, string NewPassword)
         {
             ServiceResult<bool> result = new ServiceResult<bool>();
             UsersDAOs usersDAOs = new UsersDAOs();
 
-            bool EditYN = usersDAOs.EditPassword(account, NewPassword);
+            bool EditYN = usersDAOs.EditPassword(EncryptAndDecode.Base64Decrypt(Account), EncryptAndDecode.Base64Encrypt(NewPassword));
 
             if (EditYN)
             {
@@ -151,5 +202,10 @@ namespace DemoMoney.Services
                 return result;
             }
         }
+
+
+
+
+
     }
 }

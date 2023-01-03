@@ -1,7 +1,7 @@
 ﻿@model DemoMoney.Models.Models.UsersTableModel
 
 
-<h2>Sign Up</h2>
+<h2>註冊</h2>
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
@@ -9,7 +9,8 @@
 
 @using (Html.BeginForm())
 {
-    <h1>請輸入使用者資料</h1>
+    <h2>請輸入使用者資料</h2>
+    <th>這是作品，請輸入假密碼做嘗試</th>
 
     if (ViewBag.Message != null)
     {

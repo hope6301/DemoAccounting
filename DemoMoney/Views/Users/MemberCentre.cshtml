@@ -4,8 +4,11 @@
 }
 
 <h2>MemberCentre</h2>
-
-
+    @{ if (ViewBag.Message != null)
+        {
+            <h3>@ViewBag.Message</h3>
+        }
+     }
 <div class="login-box">
     <h2>會員資料</h2>
 
@@ -14,7 +17,7 @@
     <form>
         <div class="user-box">
             @Html.LabelFor(model => model.Account, htmlAttributes: new { @class = "user-accountlabel" })
-            @Html.EditorFor(model => model.Account, new { htmlAttributes = new { @class = "userfrom", id = "AccountID" , disabled = true} })
+            @Html.EditorFor(model => model.Account, new { htmlAttributes = new { @class = "userfrom", id = "AccountID", disabled = true } })
             @Html.ValidationMessageFor(model => model.Account, "", new { @class = "text-accountmessage" })
         </div>
         <div class="user-box">

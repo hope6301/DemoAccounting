@@ -12,6 +12,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using OfficeOpenXml;
+using Org.BouncyCastle.Asn1.Ocsp;
+using Grpc.Core;
 
 namespace DemoMoney.Services
 {
@@ -49,7 +52,7 @@ namespace DemoMoney.Services
         /// </summary>
         /// <param name="demomoneytable"></param>
         /// <returns></returns>
-        public ServiceResult<bool> Create(DemoMoneyTable demomoneytable , string account)
+        public ServiceResult<bool> Create(DemoMoneyTable MoneyTable)
         {
             //新增資料的另一種寫法
             //DemoEntities2 content = new DemoEntities2();
@@ -69,11 +72,12 @@ namespace DemoMoney.Services
 
             var EndIdValue = dao.SelectEndId(SqlLength);
 
-            demomoneytable.ID = EndIdValue + 1;
-            demomoneytable.DeleteOrNot = "N";
-            demomoneytable.users = account;
+            MoneyTable.ID = EndIdValue + 1;
+            MoneyTable.DeleteOrNot = "N";
+            MoneyTable.users = EncryptAndDecode.Base64Decrypt(MoneyTable.users);
 
-            int result= dao.Create(demomoneytable);
+
+            int result= dao.Create(MoneyTable);
 
             if(result > 0)
             {
@@ -152,13 +156,17 @@ namespace DemoMoney.Services
         /// <summary>
         /// 檔案上傳
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="file">檔案</param>
+        /// <param name="account">帳號資訊</param>
         /// <returns></returns>
         public ServiceResult<bool> UpFile(HttpPostedFileBase file , string account)
         {
             ServiceResult<bool> batchResult = new ServiceResult<bool>();
-            if (file != null)
+            if (file != null && account != null)
             {
+                //先註解，可以先把帳號傳進來後先解密，就不用每次新增一次解密一次。
+                //string DecryptAccount = EncryptAndDecode.Base64Decrypt(account);
+
                 Stream stream = file.InputStream;
                 DataTable datatable = new DataTable();
                 IWorkbook wb;
@@ -314,26 +322,26 @@ namespace DemoMoney.Services
                         money = int.Parse(dataRow["money"].ToString()),
                         category = dataRow["category"].ToString(),
                         remark = dataRow["remark"].ToString(),
-                        InAndOut = dataRow["InAndOut"].ToString()
+                        InAndOut = dataRow["InAndOut"].ToString(),
+                        users = account
                     };
-                    try
-                    {
-                        this.Create(demomoneytable,account);
-                    }
-                    catch (Exception ex)
-                    {
-                        batchResult.Status = ServiceStatus.Failure;
-                        batchResult.Result = false;
-                        batchResult.Message = ex.Message;
-                        return batchResult;
-                        //ViewBag.Message = "匯入失敗";
-                    }
+                    this.Create(demomoneytable);
                 }
+
+                batchResult.Status = ServiceStatus.Success;
+                batchResult.Result = true;
+                batchResult.Message = "上傳成功";
+
+                return batchResult;
             }
-            batchResult.Status = ServiceStatus.Success;
-            batchResult.Result = true;
-            batchResult.Message = "上傳成功";
-            return batchResult;
+            else 
+            {
+                batchResult.Message = "要有檔案才能按上船喔!";
+                batchResult.Result = false;
+                batchResult.Status = ServiceStatus.Failure;
+
+                return batchResult;
+            }
         }
 
         /// <summary>
@@ -377,8 +385,11 @@ namespace DemoMoney.Services
                 sheet.GetRow(t).CreateCell(3).SetCellValue(tables[i].remark);
                 sheet.GetRow(t).CreateCell(4).SetCellValue(tables[i].InAndOut);
             }
+            string path = HttpContext.Current.Request.PhysicalApplicationPath.ToString();
+            string strFilePath = path + string.Format("sample.xls");
+            FileStream streamWriter = new FileStream(strFilePath, FileMode.Create, FileAccess.ReadWrite);
 
-            FileStream streamWriter = new FileStream(@"D:\code\測試.xls", FileMode.Create, FileAccess.ReadWrite);
+            //FileStream streamWriter = new FileStream(@"D:\code\測試.xls", FileMode.Create, FileAccess.ReadWrite);
             workbook.Write(streamWriter);
             streamWriter.Close();
             streamWriter.Dispose();
@@ -391,12 +402,147 @@ namespace DemoMoney.Services
             return batchResult;
         }
 
-        public List<DemoMoneyTable> listSelectAll(string users)
+        /// <summary>
+        /// 列出查詢日期的所有資料
+        /// </summary>
+        /// <param name="Account">用戶名稱</param>
+        /// <param name="startdatevalue">查詢的起始日期</param>
+        /// <param name="finishdatevalue">查詢的結束日期</param>
+        /// <returns></returns>
+        public List<DemoMoneyTable> listQueryDateSelectAll(string Account, string startdatevalue, string finishdatevalue)
         {
             SqlDAOs dao = new SqlDAOs();
-            List<DemoMoneyTable> reader = dao.QueryAllUsersData(users);
+            List<DemoMoneyTable> reader = dao.QueryDateUsersData(EncryptAndDecode.Base64Decrypt(Account), startdatevalue, finishdatevalue);
+            //List<DemoMoneyTable> reader1 = dao.QueryAllUsersData(EncryptAndDecode.Base64Decrypt(Account));
 
             return reader;
         }
+
+        public ServiceResult<bool> UploadUserList(HttpPostedFileBase file ,string account)
+        {
+            ServiceResult<bool> batchResult = new ServiceResult<bool>();
+
+            using (var excel = new ExcelPackage(file.InputStream))
+            {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                List<DemoMoneyTable> RowData = new List<DemoMoneyTable>();
+                var tbl = new DataTable();
+                DataTable datatable = new DataTable();
+                var ws = excel.Workbook.Worksheets.First();
+                var hasHeader = true;  // adjust accordingly
+                                       // add DataColumns to DataTable
+
+                foreach (var firstRowCell in ws.Cells[1, 1, 1, ws.Dimension.End.Column])
+                {
+                    tbl.Columns.Add(hasHeader ? firstRowCell.Text : String.Format("Column {0}", firstRowCell.Start.Column));
+                }
+
+                // add DataRows to DataTable
+                int startRow = hasHeader ? 2 : 1;
+                for (int rowNum = startRow; rowNum <= ws.Dimension.End.Row; rowNum++)
+                {
+                    //cells 儲存格超做起始值是 1
+                    //(從第幾行開始(往下數),從第幾列開始(往右數),結束行,結束列)
+                    //sheet1.Cells[3, 3, 5, 5].Value // 從 (3, 3) 一路框到 (5, 5)，包含頭尾
+                    var wsRow = ws.Cells[rowNum, 1, rowNum, ws.Dimension.End.Column];
+                    DataRow row = tbl.NewRow();
+                    foreach (var cell in wsRow)
+                    {
+                        var aa = cell.GetType();
+                        var bb = cell.Value;
+                        var cc = cell.Text;
+
+                        var dd = cell.Start.Column;
+
+                        try
+                        {
+                            string aaa = "";
+                            if (cell.Text.Length == 0 && string.IsNullOrWhiteSpace(cell.Text))
+                            {
+                                aaa = "null";
+                            }
+                            else
+                            {
+                                aaa = cell.Value.GetType().Name;
+                            }
+                            
+                            switch (aaa)
+                            {
+                                //字串型態欄位
+                                case "String":
+                                    //設定dataRow第j欄位的值，cell以字串型態取值
+                                    row[cell.Start.Column - 1] = cell.Text;
+                                    break;
+
+                                //日期型態欄位
+                                case "DateTime":
+
+                                    //設定dataRow第j欄位的值，cell以日期格式取值
+                                    var tt = DateTime.Parse(cell.Text).ToString("yyyy/MM/dd");
+                                    row[cell.Start.Column - 1] = DateTime.Parse(cell.Text).ToString("yyyy/MM/dd");
+
+                                    break;
+
+                                //數字型態欄位
+                                case "Double":
+
+                                    //設定dataRow第j欄位的值，cell以布林型態取值
+                                    row[cell.Start.Column - 1] = cell.Text;
+                                    break;
+
+                                //空值
+                                case "null":
+
+                                    row[cell.Start.Column - 1] = "";
+                                    break;
+
+                                // 預設
+                                default:
+
+                                    row[cell.Start.Column - 1] = cell.Text;
+                                    break;
+                            }
+                            row[cell.Start.Column - 1] = cell.Text;
+                        }
+                        catch (Exception ex)
+                        {
+                            //錯誤訊息
+                            throw new Exception("第 " + "i" + "列第" + "column" + "欄，資料格式有誤:\r\r" + ex.ToString());
+                        }
+
+                    }
+                    tbl.Rows.Add(row);
+
+                }
+                var msg = String.Format("DataTable successfully created from excel-file. Colum-count:{0} Row-count:{1}",
+                                        tbl.Columns.Count, tbl.Rows.Count);
+
+                foreach(DataRow aa in tbl.Rows)
+                {
+                    DemoMoneyTable demomoneytable = new DemoMoneyTable()
+                    {
+                        //傳入excel的資料給 viewmodel
+                        //ID = int.Parse(dataRow["ID"].ToString()),
+                        date = DateTime.Parse(aa["date"].ToString()),
+                        money = int.Parse(aa["money"].ToString()),
+                        category = aa["category"].ToString(),
+                        remark = aa["remark"].ToString(),
+                        users = account,
+                        InAndOut = "OUT"
+                        //InAndOut = aa["InAndOut"].ToString()
+                    };
+                    this.Create(demomoneytable);
+                }
+            }
+
+            return batchResult;
+        }
+
+
+
+
+
+
+
     }
 }

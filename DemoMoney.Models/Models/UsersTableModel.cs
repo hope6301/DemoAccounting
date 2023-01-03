@@ -16,10 +16,12 @@ namespace DemoMoney.Models.Models
         [DisplayName("帳號")]
         [Required(ErrorMessage = "必填欄位")]
         [BindRequired]
+
         public string Account { get; set; }
 
         [DisplayName("密碼")]
-        [Required]
+        [Required(ErrorMessage = "必填欄位")]
+        [RegularExpression(@"^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,16}$",ErrorMessage ="密碼包含大小寫英文和數字")]
         public string Password { get; set; }
 
         [DisplayName("姓")]

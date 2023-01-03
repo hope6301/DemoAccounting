@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         alert('修改成功');
                         top.location.href = "/DemoMoney/Index"
                     } else {
-                        alert('修改成功123');
+                        alert('修改失敗，確認資訊是否正確');
                     }
                     btn.textContent = "編輯資料"
                     LastName.disabled = true
